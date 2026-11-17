@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -252,35 +253,108 @@
     </div>
 
     <!-- Contact Us / Creator Modal -->
-    <div id="contactModal" onclick="if(event.target === this) closeContactModal()" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
-        <div class="bg-zinc-900 border-2 border-zinc-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative text-center">
+    <div id="contactModal" onclick="if(event.target === this) closeContactModal()" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-zinc-900 border-2 border-zinc-800 rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl relative text-center my-auto">
             <!-- Close Button -->
             <button onclick="closeContactModal()" class="absolute top-4 right-4 w-8 h-8 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white flex items-center justify-center transition cursor-pointer">
                 ✕
             </button>
 
-            <!-- Creator Avatar / Badge -->
-            <div class="w-16 h-16 rounded-2xl bg-red-600/20 border border-red-500/40 mx-auto flex items-center justify-center text-3xl mb-4 shadow-lg shadow-red-600/10">
-                👨‍💻
+            <!-- Navigation Tabs inside Contact Modal -->
+            <div class="flex items-center justify-center gap-1.5 bg-zinc-950 p-1 rounded-xl border border-zinc-800 mb-5 max-w-xs mx-auto">
+                <button onclick="switchContactTab('about')" id="tabAboutBtn" class="flex-1 py-1.5 px-3 rounded-lg text-xs font-bold bg-red-600 text-white transition cursor-pointer">
+                    👋 About ajuuw
+                </button>
+                <button onclick="switchContactTab('games')" id="tabGamesBtn" class="flex-1 py-1.5 px-3 rounded-lg text-xs font-bold text-zinc-400 hover:text-white transition cursor-pointer">
+                    🕹️ Mini-Games
+                </button>
             </div>
 
-            <span class="inline-block px-2.5 py-0.5 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 font-mono text-[11px] uppercase mb-2">
-                CHIEF PANIC OFFICER
-            </span>
-            <h3 class="text-2xl font-black text-white tracking-tight mb-2">
-                Hey, I'm <span class="text-red-500">ajuuw</span>! 👋
-            </h3>
-            <p class="text-zinc-300 text-sm leading-relaxed mb-5">
-                I bought the <span class="font-mono text-zinc-100 bg-zinc-800 px-1.5 py-0.5 rounded">sendhelp.in</span> domain purely for fun and built this emergency portal for anyone currently surviving awkward conversations, broken code, or minor life crises.
-            </p>
+            <!-- TAB 1: ABOUT CREATOR -->
+            <div id="contactTabAbout">
+                <!-- Creator Avatar / Badge -->
+                <div class="w-16 h-16 rounded-2xl bg-red-600/20 border border-red-500/40 mx-auto flex items-center justify-center text-3xl mb-3 shadow-lg shadow-red-600/10">
+                    👨‍💻
+                </div>
 
-            <div class="p-3.5 rounded-xl bg-zinc-950 border border-zinc-800 font-mono text-xs text-zinc-400 mb-5">
-                "No actual help will arrive, so please don't rely on this in a real emergency!"
+                <span class="inline-block px-2.5 py-0.5 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 font-mono text-[11px] uppercase mb-2">
+                    CHIEF PANIC OFFICER
+                </span>
+                <h3 class="text-2xl font-black text-white tracking-tight mb-2">
+                    Hey, I'm <span class="text-red-500">ajuuw</span>! 👋
+                </h3>
+                <p class="text-zinc-300 text-sm leading-relaxed mb-4">
+                    I bought the <span class="font-mono text-zinc-100 bg-zinc-800 px-1.5 py-0.5 rounded">sendhelp.in</span> domain purely for fun and built this emergency portal for anyone currently surviving awkward conversations, broken code, or minor life crises.
+                </p>
+
+                <div class="p-3 rounded-xl bg-zinc-950 border border-zinc-800 font-mono text-xs text-zinc-400 mb-5">
+                    "No actual help will arrive, so play some mini-games while you wait!"
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-2.5">
+                    <button onclick="switchContactTab('games')" class="flex-1 py-2.5 px-4 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700 font-bold text-sm transition cursor-pointer">
+                        🎮 Play Panic Games
+                    </button>
+                    <button onclick="closeContactModal()" class="flex-1 py-2.5 px-4 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-sm transition cursor-pointer shadow-lg shadow-red-600/20">
+                        Back to Panicking
+                    </button>
+                </div>
             </div>
 
-            <button onclick="closeContactModal()" class="w-full py-2.5 px-4 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-sm transition cursor-pointer shadow-lg shadow-red-600/20">
-                Got it, back to panicking!
-            </button>
+            <!-- TAB 2: MINI-GAMES ARCADE -->
+            <div id="contactTabGames" class="hidden text-left">
+                <!-- Game Selector Pills -->
+                <div class="grid grid-cols-2 gap-2 mb-4">
+                    <button onclick="selectMiniGame('bug')" id="gameSelectBug" class="p-2.5 rounded-xl border border-red-500 bg-red-600/15 text-center transition cursor-pointer">
+                        <div class="text-lg">🐛</div>
+                        <div class="text-xs font-bold text-white">Whack-a-Bug</div>
+                    </button>
+                    <button onclick="selectMiniGame('defuse')" id="gameSelectDefuse" class="p-2.5 rounded-xl border border-zinc-800 bg-zinc-950 hover:border-zinc-700 text-center transition cursor-pointer">
+                        <div class="text-lg">💣</div>
+                        <div class="text-xs font-bold text-zinc-300">Defuse the Crisis</div>
+                    </button>
+                </div>
+
+                <!-- MINI-GAME 1: WHACK-A-BUG -->
+                <div id="miniGameBug" class="bg-zinc-950 border border-zinc-800 rounded-xl p-4">
+                    <div class="flex items-center justify-between mb-3 font-mono text-xs">
+                        <span class="text-zinc-400">SCORE: <strong id="bugScore" class="text-emerald-400 text-sm">0</strong></span>
+                        <span class="text-zinc-400">TIME: <strong id="bugTimer" class="text-red-400 text-sm">15s</strong></span>
+                    </div>
+
+                    <!-- 3x3 Server Grid -->
+                    <div id="bugGrid" class="grid grid-cols-3 gap-2 mb-3">
+                        <!-- 9 holes populated by JS -->
+                    </div>
+
+                    <button onclick="startBugGame()" id="startBugBtn" class="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider transition cursor-pointer">
+                        ▶ Start Squashing Bugs
+                    </button>
+                </div>
+
+                <!-- MINI-GAME 2: DEFUSE THE CRISIS (Reflex Stop-Bar Game) -->
+                <div id="miniGameDefuse" class="hidden bg-zinc-950 border border-zinc-800 rounded-xl p-4">
+                    <div class="flex items-center justify-between mb-2 font-mono text-xs">
+                        <span class="text-zinc-400">STREAK: <strong id="defuseStreak" class="text-emerald-400 text-sm">0</strong></span>
+                        <span class="text-zinc-400">BEST: <strong id="defuseBest" class="text-yellow-400 text-sm">0</strong></span>
+                    </div>
+                    <p class="text-[11px] text-zinc-400 mb-3 text-center">Stop the needle inside the <span class="text-emerald-400 font-bold">GREEN ZONE</span> to stabilize the server!</p>
+
+                    <!-- Reflex Bar -->
+                    <div class="relative w-full h-8 bg-zinc-900 rounded-xl border border-zinc-700 overflow-hidden mb-3">
+                        <!-- Target Safe Zone -->
+                        <div id="defuseSafeZone" class="absolute top-0 bottom-0 bg-emerald-500/30 border-x-2 border-emerald-400" style="left: 38%; width: 24%;"></div>
+                        <!-- Moving Cursor -->
+                        <div id="defuseCursor" class="absolute top-0 bottom-0 w-1.5 bg-red-500 shadow-[0_0_10px_#ef4444]" style="left: 0%;"></div>
+                    </div>
+
+                    <p id="defuseStatus" class="text-center font-mono text-xs text-zinc-300 h-4 mb-3">Ready to stabilize?</p>
+
+                    <button onclick="handleDefuseAction()" id="defuseActionBtn" class="w-full py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs uppercase tracking-wider transition cursor-pointer">
+                        ⚡ Start Reflex Check
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -671,13 +745,207 @@
             const modal = document.getElementById('contactModal');
             modal.classList.remove('hidden');
             modal.classList.add('flex');
+            initBugGrid();
         }
 
         function closeContactModal() {
             playClickSound();
+            stopAllMiniGames();
             const modal = document.getElementById('contactModal');
             modal.classList.add('hidden');
             modal.classList.remove('flex');
+        }
+
+        function switchContactTab(tab) {
+            playClickSound();
+            const aboutTab = document.getElementById('contactTabAbout');
+            const gamesTab = document.getElementById('contactTabGames');
+            const aboutBtn = document.getElementById('tabAboutBtn');
+            const gamesBtn = document.getElementById('tabGamesBtn');
+
+            if (tab === 'about') {
+                stopAllMiniGames();
+                aboutTab.classList.remove('hidden');
+                gamesTab.classList.add('hidden');
+                aboutBtn.className = 'flex-1 py-1.5 px-3 rounded-lg text-xs font-bold bg-red-600 text-white transition cursor-pointer';
+                gamesBtn.className = 'flex-1 py-1.5 px-3 rounded-lg text-xs font-bold text-zinc-400 hover:text-white transition cursor-pointer';
+            } else {
+                aboutTab.classList.add('hidden');
+                gamesTab.classList.remove('hidden');
+                gamesBtn.className = 'flex-1 py-1.5 px-3 rounded-lg text-xs font-bold bg-red-600 text-white transition cursor-pointer';
+                aboutBtn.className = 'flex-1 py-1.5 px-3 rounded-lg text-xs font-bold text-zinc-400 hover:text-white transition cursor-pointer';
+                initBugGrid();
+            }
+        }
+
+        function selectMiniGame(game) {
+            playClickSound();
+            stopAllMiniGames();
+            const bugView = document.getElementById('miniGameBug');
+            const defuseView = document.getElementById('miniGameDefuse');
+            const bugBtn = document.getElementById('gameSelectBug');
+            const defuseBtn = document.getElementById('gameSelectDefuse');
+
+            if (game === 'bug') {
+                bugView.classList.remove('hidden');
+                defuseView.classList.add('hidden');
+                bugBtn.className = 'p-2.5 rounded-xl border border-red-500 bg-red-600/15 text-center transition cursor-pointer';
+                defuseBtn.className = 'p-2.5 rounded-xl border border-zinc-800 bg-zinc-950 hover:border-zinc-700 text-center transition cursor-pointer';
+            } else {
+                bugView.classList.add('hidden');
+                defuseView.classList.remove('hidden');
+                defuseBtn.className = 'p-2.5 rounded-xl border border-red-500 bg-red-600/15 text-center transition cursor-pointer';
+                bugBtn.className = 'p-2.5 rounded-xl border border-zinc-800 bg-zinc-950 hover:border-zinc-700 text-center transition cursor-pointer';
+            }
+        }
+
+        function stopAllMiniGames() {
+            clearInterval(bugTimerInterval);
+            clearInterval(bugSpawnInterval);
+            bugGameActive = false;
+            cancelAnimationFrame(defuseAnimFrame);
+            defuseRunning = false;
+        }
+
+        // --- MINI-GAME 1: WHACK-A-BUG ---
+        let bugScore = 0;
+        let bugTimeLeft = 15;
+        let bugGameActive = false;
+        let activeBugIndex = -1;
+        let bugTimerInterval = null;
+        let bugSpawnInterval = null;
+
+        function initBugGrid() {
+            const grid = document.getElementById('bugGrid');
+            if (!grid) return;
+            grid.innerHTML = Array.from({ length: 9 }, (_, i) => `
+                <button onclick="whackBug(${i})" id="bugCell-${i}" 
+                    class="h-14 sm:h-16 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 flex items-center justify-center text-2xl transition-transform active:scale-90 cursor-pointer select-none">
+                    <span class="opacity-20 text-xs font-mono">SYS</span>
+                </button>
+            `).join('');
+        }
+
+        function startBugGame() {
+            stopAllMiniGames();
+            bugScore = 0;
+            bugTimeLeft = 15;
+            bugGameActive = true;
+            document.getElementById('bugScore').textContent = bugScore;
+            document.getElementById('bugTimer').textContent = `${bugTimeLeft}s`;
+            document.getElementById('startBugBtn').textContent = '🔥 Squashing in progress...';
+            initBugGrid();
+
+            spawnBug();
+            bugSpawnInterval = setInterval(spawnBug, 650);
+
+            bugTimerInterval = setInterval(() => {
+                bugTimeLeft--;
+                document.getElementById('bugTimer').textContent = `${bugTimeLeft}s`;
+                if (bugTimeLeft <= 0) {
+                    stopAllMiniGames();
+                    initBugGrid();
+                    document.getElementById('startBugBtn').textContent = `🔄 Play Again (Score: ${bugScore})`;
+                    showToast(`🐛 You squashed ${bugScore} production bugs!`);
+                }
+            }, 1000);
+        }
+
+        function spawnBug() {
+            if (!bugGameActive) return;
+            if (activeBugIndex !== -1) {
+                const prev = document.getElementById(`bugCell-${activeBugIndex}`);
+                if (prev) prev.innerHTML = '<span class="opacity-20 text-xs font-mono">SYS</span>';
+            }
+            activeBugIndex = Math.floor(Math.random() * 9);
+            const cell = document.getElementById(`bugCell-${activeBugIndex}`);
+            const icons = ['🐛', '🔥', '💀', '👾'];
+            const icon = icons[Math.floor(Math.random() * icons.length)];
+            if (cell) cell.innerHTML = `<span class="animate-bounce">${icon}</span>`;
+        }
+
+        function whackBug(index) {
+            if (!bugGameActive || index !== activeBugIndex) return;
+            bugScore++;
+            document.getElementById('bugScore').textContent = bugScore;
+            playClickSound();
+            const cell = document.getElementById(`bugCell-${index}`);
+            if (cell) cell.innerHTML = '💥';
+            activeBugIndex = -1;
+        }
+
+        // --- MINI-GAME 2: DEFUSE THE CRISIS ---
+        let defuseRunning = false;
+        let defusePos = 0;
+        let defuseDir = 1;
+        let defuseSpeed = 1.6;
+        let defuseStreak = 0;
+        let defuseBest = 0;
+        let safeStart = 38;
+        let safeWidth = 24;
+        let defuseAnimFrame = null;
+
+        function handleDefuseAction() {
+            const btn = document.getElementById('defuseActionBtn');
+            const status = document.getElementById('defuseStatus');
+
+            if (!defuseRunning) {
+                // Start moving needle
+                defuseRunning = true;
+                defusePos = 0;
+                defuseDir = 1;
+                safeWidth = Math.max(12, 26 - defuseStreak * 2);
+                safeStart = Math.floor(15 + Math.random() * (70 - safeWidth));
+                const safeZone = document.getElementById('defuseSafeZone');
+                safeZone.style.left = `${safeStart}%`;
+                safeZone.style.width = `${safeWidth}%`;
+
+                btn.textContent = '🛑 STOP NEEDLE NOW!';
+                btn.className = 'w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider transition cursor-pointer';
+                status.textContent = 'Wait for the green zone...';
+                status.className = 'text-center font-mono text-xs text-yellow-400 h-4 mb-3';
+                animateDefuse();
+            } else {
+                // Check hit
+                defuseRunning = false;
+                cancelAnimationFrame(defuseAnimFrame);
+                const hit = defusePos >= safeStart && defusePos <= (safeStart + safeWidth);
+
+                if (hit) {
+                    playClickSound();
+                    defuseStreak++;
+                    if (defuseStreak > defuseBest) defuseBest = defuseStreak;
+                    defuseSpeed = Math.min(4.5, 1.6 + defuseStreak * 0.35);
+                    document.getElementById('defuseStreak').textContent = defuseStreak;
+                    document.getElementById('defuseBest').textContent = defuseBest;
+                    status.textContent = '✅ Crisis Averted! Speed increasing...';
+                    status.className = 'text-center font-mono text-xs text-emerald-400 h-4 mb-3';
+                    btn.textContent = '⚡ Next Level';
+                } else {
+                    playAlarmSound();
+                    defuseStreak = 0;
+                    defuseSpeed = 1.6;
+                    document.getElementById('defuseStreak').textContent = 0;
+                    status.textContent = '💥 Server Exploded! Missed the zone.';
+                    status.className = 'text-center font-mono text-xs text-red-400 h-4 mb-3';
+                    btn.textContent = '🔄 Try Again';
+                }
+                btn.className = 'w-full py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs uppercase tracking-wider transition cursor-pointer';
+            }
+        }
+
+        function animateDefuse() {
+            if (!defuseRunning) return;
+            defusePos += defuseDir * defuseSpeed;
+            if (defusePos >= 98) {
+                defusePos = 98;
+                defuseDir = -1;
+            } else if (defusePos <= 0) {
+                defusePos = 0;
+                defuseDir = 1;
+            }
+            document.getElementById('defuseCursor').style.left = `${defusePos}%`;
+            defuseAnimFrame = requestAnimationFrame(animateDefuse);
         }
     </script>
 </body>
