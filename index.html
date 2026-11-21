@@ -1,1440 +1,1028 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SENDHELP | Official Emergency Panic Portal</title>
+    <title>SendHelp.in — I Don't Need Your Help. I'm Good.</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Tone.js for hilarious emergency sound effects -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
     <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
                     fontFamily: {
                         sans: ['Inter', 'sans-serif'],
-                        mono: ['Space Mono', 'monospace'],
-                    },
-                    animation: {
-                        'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                        'wiggle': 'wiggle 0.3s ease-in-out infinite',
-                        'marquee': 'marquee 25s linear infinite',
-                    },
-                    keyframes: {
-                        wiggle: {
-                            '0%, 100%': { transform: 'rotate(-2deg)' },
-                            '50%': { transform: 'rotate(2deg)' },
-                        },
-                        marquee: {
-                            '0%': { transform: 'translateX(0%)' },
-                            '100%': { transform: 'translateX(-50%)' },
-                        }
+                        mono: ['JetBrains Mono', 'monospace'],
                     }
                 }
             }
         }
     </script>
     <style>
-        /* Custom subtle grid background */
-        .bg-grid {
-            background-size: 40px 40px;
-            background-image: 
-                linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+        /* Custom animations & tactile arcade button styling */
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-6px); }
         }
-        
-        /* Realistic 3D Big Red Button styling */
-        .panic-btn {
-            box-shadow: 
-                0 12px 0 #991b1b,
-                0 20px 35px rgba(220, 38, 38, 0.5),
-                inset 0 4px 10px rgba(255, 255, 255, 0.4);
-            transition: all 0.08s cubic-bezier(0.4, 0, 0.2, 1);
+        .float-slow {
+            animation: floatSlow 3.5s ease-in-out infinite;
         }
-        .panic-btn:active, .panic-btn.pressed {
-            transform: translateY(10px);
-            box-shadow: 
-                0 2px 0 #991b1b,
-                0 5px 15px rgba(220, 38, 38, 0.6),
-                inset 0 2px 5px rgba(0, 0, 0, 0.4);
+        .arcade-btn {
+            box-shadow: 0 6px 0 #0284c7, 0 14px 28px rgba(14, 165, 233, 0.35);
+            transition: transform 0.08s ease, box-shadow 0.08s ease, background-color 0.15s ease;
         }
-
-        /* Hazard stripes */
-        .hazard-stripes {
-            background: repeating-linear-gradient(
-                -45deg,
-                #facc15,
-                #facc15 15px,
-                #18181b 15px,
-                #18181b 30px
-            );
+        .arcade-btn:active {
+            transform: translateY(5px);
+            box-shadow: 0 1px 0 #0284c7, 0 4px 10px rgba(14, 165, 233, 0.25);
+        }
+        canvas.game-surface {
+            display: block;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
         }
     </style>
 </head>
-<body class="bg-zinc-950 text-zinc-100 min-h-screen flex flex-col bg-grid selection:bg-red-600 selection:text-white overflow-x-hidden">
+<body class="bg-zinc-950 text-zinc-100 antialiased min-h-screen flex flex-col selection:bg-amber-400 selection:text-zinc-950">
 
-    <!-- Top Emergency Ticker -->
-    <div class="bg-red-600 text-white font-mono text-xs sm:text-sm py-2 overflow-hidden whitespace-nowrap border-b-2 border-red-800 shadow-lg">
-        <div class="inline-block animate-marquee">
-            <span class="mx-4 font-bold">🚨 BREAKING NEWS:</span> Someone just replied "Per my last email" • 
-            <span class="mx-4 font-bold">⚠️ ALERT:</span> User forgot why they walked into the kitchen • 
-            <span class="mx-4 font-bold">🔥 CRITICAL:</span> Production database deployed on a Friday at 4:59 PM • 
-            <span class="mx-4 font-bold">🆘 SOS:</span> Barber asked "How does it look?" and user said "Great!" while holding back tears • 
-            <span class="mx-4 font-bold">🚨 BREAKING NEWS:</span> Someone just replied "Per my last email" • 
-            <span class="mx-4 font-bold">⚠️ ALERT:</span> User forgot why they walked into the kitchen • 
-            <span class="mx-4 font-bold">🔥 CRITICAL:</span> Production database deployed on a Friday at 4:59 PM • 
-            <span class="mx-4 font-bold">🆘 SOS:</span> Barber asked "How does it look?" and user said "Great!" while holding back tears • 
-        </div>
-    </div>
-
-    <!-- Header -->
-    <header class="max-w-5xl w-full mx-auto px-4 pt-6 pb-2 flex flex-wrap items-center justify-between gap-4">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-red-600 flex items-center justify-center shadow-lg shadow-red-600/30 animate-pulse-fast">
-                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                </svg>
+    <!-- Minimalist Sarcastic Header -->
+    <header class="border-b border-zinc-800/90 bg-zinc-950/90 backdrop-blur-md sticky top-0 z-30">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-amber-400 text-zinc-950 flex items-center justify-center font-black">
+                    <i data-lucide="shield-check" class="w-5 h-5"></i>
+                </div>
+                <span class="font-extrabold text-base sm:text-lg tracking-tight">SendHelp<span class="text-amber-400">.in</span></span>
+                <span class="hidden sm:inline-block text-[11px] font-mono px-2 py-0.5 rounded-md bg-zinc-900 border border-zinc-800 text-zinc-400">0% ASSISTANCE REQUESTED</span>
             </div>
-            <div>
-                <h1 class="text-xl sm:text-2xl font-black tracking-tighter uppercase">sendhelp<span class="text-red-500">.in</span></h1>
-                <p class="text-[11px] font-mono text-zinc-400">DEPT. OF POOR LIFE DECISIONS</p>
-            </div>
-        </div>
-
-        <div class="flex items-center gap-3">
-            <!-- Sound Toggle -->
-            <button id="soundToggle" onclick="toggleSound()" class="px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-xs font-mono flex items-center gap-2 transition">
-                <span id="soundIcon">🔊</span>
-                <span id="soundText">SFX: ON</span>
-            </button>
-            <!-- Fake Live Counter -->
-            <div class="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs font-mono text-zinc-300">
-                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-                <span><strong id="liveCount" class="text-white">4,812</strong> currently panicking</span>
+            <div id="sarcastic-ticker" class="text-xs font-mono text-amber-300/90 truncate max-w-[200px] sm:max-w-md">
+                Status: Totally fine, thanks.
             </div>
         </div>
     </header>
 
-    <!-- Main Content -->
-    <main class="flex-grow max-w-4xl w-full mx-auto px-4 py-8 flex flex-col items-center justify-center">
-        
-        <!-- Step 1: Select Crisis Category -->
-        <div class="w-full max-w-2xl mb-8 text-center">
-            <span class="inline-block px-3 py-1 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 font-mono text-xs mb-3">
-                STEP 1: IDENTIFY YOUR CATASTROPHE
-            </span>
-            <h2 class="text-2xl sm:text-4xl font-extrabold tracking-tight mb-6">
-                Hello, ajuuw here, What kind of <span class="text-red-500 underline decoration-wavy decoration-red-500/50">help</span> do you need?
-            </h2>
+    <!-- Main Hero Stage -->
+    <main class="flex-grow flex flex-col items-center justify-center px-4 py-14 text-center relative overflow-hidden">
+        <!-- Subtle ambient glow -->
+        <div class="absolute w-[420px] h-[420px] rounded-full bg-sky-500/10 blur-3xl pointer-events-none -top-20"></div>
+        <div class="absolute w-[340px] h-[340px] rounded-full bg-amber-400/10 blur-3xl pointer-events-none bottom-0 right-10"></div>
 
-            <!-- Category Pills -->
-            <div id="categoryGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3 text-left">
-                <!-- Populated via JS -->
-            </div>
-        </div>
+        <div class="relative z-10 max-w-3xl mx-auto">
+            <h1 class="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-white leading-[1.06] mb-5">
+                I don’t need your help. <span class="text-amber-400">I’m good.</span>
+            </h1>
 
-        <!-- Step 2: The Big Red Button -->
-        <div class="relative flex flex-col items-center my-4">
-            <!-- Hazard Frame -->
-            <div class="p-3 rounded-full hazard-stripes shadow-2xl">
-                <div class="p-4 bg-zinc-900 rounded-full border-4 border-zinc-800">
-                    <button id="panicButton" onclick="triggerHelp()" class="panic-btn w-44 h-44 sm:w-52 sm:h-52 rounded-full bg-gradient-to-b from-red-500 via-red-600 to-red-700 flex flex-col items-center justify-center text-white select-none cursor-pointer group focus:outline-none">
-                        <span class="text-4xl sm:text-5xl mb-1 group-hover:scale-110 transition-transform">🆘</span>
-                        <span class="font-black text-2xl sm:text-3xl tracking-wider uppercase drop-shadow">SEND HELP</span>
-                        <span class="font-mono text-[10px] sm:text-xs text-red-200 mt-1 opacity-90">PRESS IN EMERGENCY</span>
+            <p class="text-zinc-400 text-base sm:text-lg max-w-xl mx-auto mb-8 leading-relaxed">
+                Keep your unsolicited advice, your life hacks, and your "quick tips." I’ve got everything under control—or I’m at least pretending I do while playing 10 weird mini-games solo.
+            </p>
+
+            <!-- Interactive Self-Reliance Meter & Mood Switcher -->
+            <div class="max-w-lg mx-auto mb-9 bg-zinc-900/90 border border-zinc-800 rounded-2xl p-4 text-left">
+                <div class="flex items-center justify-between gap-2 mb-2.5">
+                    <span class="text-xs font-mono uppercase tracking-wider text-amber-400 font-bold">How "Good" Are You Right Now?</span>
+                    <span id="good-meter-label" class="text-xs font-mono font-bold text-sky-400">88% — Unbothered</span>
+                </div>
+                <input id="good-meter-slider" type="range" min="0" max="100" value="88" oninput="updateGoodMeter(this.value)"
+                    class="w-full accent-amber-400 cursor-pointer mb-3">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <div class="flex flex-wrap gap-1.5">
+                        <button onclick="setMoodPreset('unbothered')" class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-[11px] font-mono text-zinc-200 cursor-pointer">Unbothered</button>
+                        <button onclick="setMoodPreset('chaotic')" class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-[11px] font-mono text-zinc-200 cursor-pointer">Chaotic</button>
+                        <button onclick="setMoodPreset('petty')" class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-[11px] font-mono text-zinc-200 cursor-pointer">Mildly Petty</button>
+                    </div>
+                    <button onclick="pokeThePage()" class="px-2.5 py-1 rounded-lg bg-amber-400/15 hover:bg-amber-400/25 border border-amber-400/30 text-[11px] font-mono text-amber-300 font-bold cursor-pointer">
+                        Poke Me
                     </button>
                 </div>
+                <p id="interactive-reply" class="text-xs font-mono text-zinc-400 mt-3 pt-2.5 border-t border-zinc-800/80">
+                    Tip of the day: Nobody asked for a tip of the day.
+                </p>
             </div>
-            <p class="font-mono text-xs text-zinc-500 mt-4">Or press <kbd class="px-1.5 py-0.5 bg-zinc-800 border border-zinc-700 rounded text-zinc-300">SPACEBAR</kbd> repeatedly</p>
-        </div>
 
-        <!-- Step 3: Dispatch Response Console (Hidden until triggered) -->
-        <div id="dispatchConsole" class="w-full max-w-2xl mt-8 hidden transition-all duration-300">
-            <div class="bg-zinc-900/90 backdrop-blur border-2 border-zinc-800 rounded-2xl overflow-hidden shadow-2xl">
-                <!-- Console Header -->
-                <div class="bg-zinc-800/80 px-4 py-3 flex items-center justify-between border-b border-zinc-700">
-                    <div class="flex items-center gap-2">
-                        <span class="w-3 h-3 rounded-full bg-red-500"></span>
-                        <span class="w-3 h-3 rounded-full bg-yellow-500"></span>
-                        <span class="w-3 h-3 rounded-full bg-green-500"></span>
-                        <span class="ml-2 font-mono text-xs text-zinc-400" id="ticketId">TICKET #SH-0000</span>
-                    </div>
-                    <span id="statusBadge" class="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
-                        DISPATCHING...
-                    </span>
+            <!-- THE BUTTON: Opens the 10 Creative Games Vault -->
+            <div class="flex flex-col items-center gap-4">
+                <button id="open-games-btn" onclick="openGamesVault()" class="arcade-btn float-slow inline-flex items-center gap-3 bg-sky-500 hover:bg-sky-400 text-zinc-950 font-black text-base sm:text-lg px-8 py-4 rounded-2xl cursor-pointer">
+                    <i data-lucide="gamepad-2" class="w-6 h-6"></i>
+                    <span>OPEN THE 10 CREATIVE GAMES</span>
+                    <span class="text-xs font-mono bg-zinc-950 text-sky-400 px-2.5 py-1 rounded-lg">10/10</span>
+                </button>
+
+                <button onclick="cycleSarcasm()" class="text-xs font-mono text-zinc-500 hover:text-zinc-300 underline underline-offset-4 cursor-pointer">
+                    Need a reminder of how self-sufficient you are? Click here.
+                </button>
+            </div>
+
+            <!-- Cheeky Status Cards -->
+            <div class="mt-14 grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
+                <div class="bg-zinc-900/80 border border-zinc-800/90 rounded-2xl p-4">
+                    <div class="text-xs font-mono text-amber-400 font-bold mb-1">HELP DESK</div>
+                    <div class="text-sm font-bold text-white">Closed Permanently</div>
+                    <div class="text-xs text-zinc-500 mt-0.5">Nobody asked anyway.</div>
                 </div>
-
-                <!-- Console Body -->
-                <div class="p-5 sm:p-6">
-                    <!-- Loading Progress Bar -->
-                    <div id="progressContainer" class="mb-4">
-                        <div class="flex justify-between font-mono text-xs text-zinc-400 mb-1.5">
-                            <span id="loadingText">Contacting nearest adult...</span>
-                            <span id="loadingPercent">0%</span>
-                        </div>
-                        <div class="w-full h-2.5 bg-zinc-800 rounded-full overflow-hidden">
-                            <div id="progressBar" class="h-full bg-red-500 rounded-full transition-all duration-150" style="width: 0%"></div>
-                        </div>
-                    </div>
-
-                    <!-- Result Card -->
-                    <div id="resultContent" class="hidden space-y-4">
-                        <div class="p-4 rounded-xl bg-zinc-950 border border-zinc-800">
-                            <div class="text-xs font-mono text-red-400 uppercase mb-1" id="dispatchUnit">UNIT DISPATCHED:</div>
-                            <h3 class="text-lg sm:text-xl font-bold text-white mb-2" id="dispatchTitle">Title goes here</h3>
-                            <p class="text-zinc-300 text-sm sm:text-base leading-relaxed" id="dispatchMessage">Message goes here</p>
-                        </div>
-
-                        <!-- Actionable Excuse / Copyable Alibi -->
-                        <div class="p-4 rounded-xl bg-emerald-950/30 border border-emerald-800/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                            <div>
-                                <span class="text-[11px] font-mono text-emerald-400 uppercase block mb-0.5">📋 Official Copy-Paste Excuse / Action:</span>
-                                <p class="text-sm text-emerald-100 font-medium italic" id="alibiText">"Sorry, my Wi-Fi went through a tunnel."</p>
-                            </div>
-                            <button onclick="copyAlibi()" id="copyBtn" class="shrink-0 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer">
-                                <span>Copy Text</span>
-                            </button>
-                        </div>
-
-                        <!-- Fake Rescue Actions -->
-                        <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-zinc-800/80 text-xs font-mono text-zinc-400">
-                            <span>ETA: <strong class="text-white" id="etaText">Never (You got this)</strong></span>
-                            <div class="flex gap-2">
-                                <button onclick="triggerFakeCall()" class="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 transition cursor-pointer">
-                                    📞 Fake Incoming Call
-                                </button>
-                                <button onclick="triggerHelp()" class="px-3 py-1.5 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 transition cursor-pointer">
-                                    🔄 New Excuse
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                <div class="bg-zinc-900/80 border border-zinc-800/90 rounded-2xl p-4">
+                    <div class="text-xs font-mono text-sky-400 font-bold mb-1">CONFIDENCE LEVEL</div>
+                    <div class="text-sm font-bold text-white">Unreasonably High</div>
+                    <div class="text-xs text-zinc-500 mt-0.5">Backed by zero evidence.</div>
+                </div>
+                <div class="bg-zinc-900/80 border border-zinc-800/90 rounded-2xl p-4">
+                    <div class="text-xs font-mono text-emerald-400 font-bold mb-1">SOLO ARCADE</div>
+                    <div class="text-sm font-bold text-white">10 Creative Games Inside</div>
+                    <div class="text-xs text-zinc-500 mt-0.5">Play solo. Win alone.</div>
                 </div>
             </div>
-        </div>
 
+            <!-- Funny About Me Bio & Contact Aju Footer Section -->
+            <section class="mt-8 bg-zinc-900/90 border border-zinc-800 rounded-2xl p-5 text-left">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <div class="text-[11px] font-mono uppercase tracking-wider text-amber-400 font-bold mb-1">
+                            About Me (Written Without Supervision)
+                        </div>
+                        <p class="text-sm text-zinc-300 leading-relaxed">
+                            Hi, I’m Aju. I build things, ignore instructions, play 10 mini-games alone to feel powerful, and still say <span class="text-white font-semibold">"I’m good"</span> even when my Wi-Fi drops mid-sentence.
+                        </p>
+                    </div>
+                    <button id="contact-aju-btn" onclick="contactAju()"
+                        class="shrink-0 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-zinc-950 font-black text-xs sm:text-sm cursor-pointer transition">
+                        <i data-lucide="send" class="w-4 h-4"></i>
+                        <span>Contact Aju</span>
+                    </button>
+                </div>
+                <div id="aju-contact-reply" class="hidden mt-3 pt-3 border-t border-zinc-800/80 text-xs font-mono text-sky-400"></div>
+            </section>
+        </div>
     </main>
 
-    <!-- Fake Incoming Call Modal (Ultimate Social Escape Tool!) -->
-    <div id="fakeCallModal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden flex-col items-center justify-between py-16 px-6 text-center">
-        <div class="mt-8">
-            <div class="w-24 h-24 rounded-full bg-zinc-800 border-2 border-zinc-700 mx-auto flex items-center justify-center text-4xl mb-4 animate-bounce">
-                👵
-            </div>
-            <p class="text-emerald-400 font-mono text-xs tracking-widest uppercase mb-1">Incoming Emergency Call...</p>
-            <h2 class="text-3xl font-bold text-white" id="callerName">Grandma (URGENT)</h2>
-            <p class="text-zinc-400 text-sm mt-1" id="callerSub">Mobile • +1 (555) 019-9999</p>
-        </div>
-
-        <div class="w-full max-w-xs flex items-center justify-around mb-8">
-            <button onclick="closeFakeCall()" class="flex flex-col items-center gap-2 group cursor-pointer">
-                <div class="w-16 h-16 rounded-full bg-red-600 group-hover:bg-red-500 flex items-center justify-center text-2xl shadow-lg shadow-red-600/40 transition">
-                    📵
-                </div>
-                <span class="text-xs font-mono text-zinc-400">Decline</span>
-            </button>
-            <button onclick="acceptFakeCall()" id="acceptCallBtn" class="flex flex-col items-center gap-2 group cursor-pointer">
-                <div class="w-16 h-16 rounded-full bg-emerald-500 group-hover:bg-emerald-400 flex items-center justify-center text-2xl shadow-lg shadow-emerald-500/40 animate-pulse transition">
-                    📞
-                </div>
-                <span class="text-xs font-mono text-zinc-400">Accept</span>
-            </button>
-        </div>
-    </div>
-
-    <!-- Custom Toast Notification -->
-    <div id="toast" class="fixed bottom-5 right-5 bg-zinc-800 border border-zinc-700 text-white px-4 py-3 rounded-xl shadow-2xl font-mono text-xs transform translate-y-20 opacity-0 transition-all duration-300 z-50">
-        Copied to clipboard!
-    </div>
-
-    <!-- Contact Us / Creator Modal -->
-    <div id="contactModal" onclick="if(event.target === this) closeContactModal()" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4 overflow-y-auto">
-        <div class="bg-zinc-900 border-2 border-zinc-800 rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl relative text-center my-auto">
-            <!-- Close Button -->
-            <button onclick="closeContactModal()" class="absolute top-4 right-4 w-8 h-8 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white flex items-center justify-center transition cursor-pointer">
-                ✕
-            </button>
-
-            <!-- Navigation Tabs inside Contact Modal -->
-            <div class="flex items-center justify-center gap-1.5 bg-zinc-950 p-1 rounded-xl border border-zinc-800 mb-5 max-w-xs mx-auto">
-                <button onclick="switchContactTab('about')" id="tabAboutBtn" class="flex-1 py-1.5 px-3 rounded-lg text-xs font-bold bg-red-600 text-white transition cursor-pointer">
-                    👋 About ajuuw
-                </button>
-                <button onclick="switchContactTab('games')" id="tabGamesBtn" class="flex-1 py-1.5 px-3 rounded-lg text-xs font-bold text-zinc-400 hover:text-white transition cursor-pointer">
-                    🕹️ Mini-Games
-                </button>
-            </div>
-
-            <!-- TAB 1: ABOUT CREATOR -->
-            <div id="contactTabAbout">
-                <!-- Creator Avatar / Badge -->
-                <div class="w-16 h-16 rounded-2xl bg-red-600/20 border border-red-500/40 mx-auto flex items-center justify-center text-3xl mb-3 shadow-lg shadow-red-600/10">
-                    👨‍💻
-                </div>
-
-                <span class="inline-block px-2.5 py-0.5 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 font-mono text-[11px] uppercase mb-2">
-                    CHIEF PANIC OFFICER
+    <!-- =========================================================================
+         INSIDE THE BUTTON: 10 CREATIVE GAMES VAULT MODAL
+    ========================================================================== -->
+    <div id="games-vault-modal" class="fixed inset-0 z-50 hidden bg-zinc-950/90 backdrop-blur-md flex flex-col">
+        <!-- Vault Top Bar -->
+        <div class="border-b border-zinc-800 bg-zinc-950 px-4 sm:px-6 h-16 flex items-center justify-between shrink-0">
+            <div class="flex items-center gap-3">
+                <span class="px-2.5 py-1 rounded-lg bg-amber-400/15 border border-amber-400/30 text-amber-400 font-mono text-xs font-bold">
+                    10 CREATIVE GAMES
                 </span>
-                <h3 class="text-2xl font-black text-white tracking-tight mb-2">
-                    Hey, I'm <span class="text-red-500">ajuuw</span>! 👋
-                </h3>
-                <p class="text-zinc-300 text-sm leading-relaxed mb-4">
-                    I bought the <span class="font-mono text-zinc-100 bg-zinc-800 px-1.5 py-0.5 rounded">sendhelp.in</span> domain purely for fun and built this emergency portal for anyone currently surviving awkward conversations, broken code, or minor life crises.
-                </p>
+                <span id="active-game-label" class="font-bold text-sm sm:text-base text-white truncate">
+                    Pick a game—I don't care which one.
+                </span>
+            </div>
+            <button onclick="closeGamesVault()" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-xs font-bold text-zinc-200 cursor-pointer">
+                <i data-lucide="x" class="w-4 h-4"></i>
+                <span>I'm Done</span>
+            </button>
+        </div>
 
-                <div class="p-3 rounded-xl bg-zinc-950 border border-zinc-800 font-mono text-xs text-zinc-400 mb-5">
-                    "No actual help will arrive, so play some mini-games while you wait!"
-                </div>
-
-                <div class="flex flex-col sm:flex-row gap-2.5">
-                    <button onclick="switchContactTab('games')" class="flex-1 py-2.5 px-4 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700 font-bold text-sm transition cursor-pointer">
-                        🎮 Play Panic Games
-                    </button>
-                    <button onclick="closeContactModal()" class="flex-1 py-2.5 px-4 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-sm transition cursor-pointer shadow-lg shadow-red-600/20">
-                        Back to Panicking
-                    </button>
-                </div>
+        <!-- Vault Body: 10 Game Selector + Live Play Stage -->
+        <div class="flex-grow overflow-y-auto p-4 sm:p-6 max-w-6xl w-full mx-auto flex flex-col gap-5">
+            <!-- 10 Creative Games Selector Grid -->
+            <div id="game-picker-grid" class="grid grid-cols-2 sm:grid-cols-5 gap-2.5 shrink-0">
+                <!-- Populated dynamically with 10 creative games -->
             </div>
 
-            <!-- TAB 2: MINI-GAMES ARCADE -->
-            <div id="contactTabGames" class="hidden text-left">
-                <!-- Game Selector Grid (10 Games) -->
-                <div class="grid grid-cols-5 gap-1.5 mb-3">
-                    <button onclick="selectMiniGame('bug')" id="gameSelectBug" title="Whack-a-Bug" class="p-2 rounded-xl border border-red-500 bg-red-600/15 text-center transition cursor-pointer">
-                        <div class="text-base">🐛</div>
-                        <div class="text-[10px] font-bold text-white truncate">Bugs</div>
-                    </button>
-                    <button onclick="selectMiniGame('defuse')" id="gameSelectDefuse" title="Defuse the Crisis" class="p-2 rounded-xl border border-zinc-800 bg-zinc-950 hover:border-zinc-700 text-center transition cursor-pointer">
-                        <div class="text-base">💣</div>
-                        <div class="text-[10px] font-bold text-zinc-300 truncate">Defuse</div>
-                    </button>
-                    <button onclick="selectMiniGame('typer')" id="gameSelectTyper" title="Excuse Typer" class="p-2 rounded-xl border border-zinc-800 bg-zinc-950 hover:border-zinc-700 text-center transition cursor-pointer">
-                        <div class="text-base">⌨️</div>
-                        <div class="text-[10px] font-bold text-zinc-300 truncate">Typer</div>
-                    </button>
-                    <button onclick="selectMiniGame('memory')" id="gameSelectMemory" title="Panic Memory" class="p-2 rounded-xl border border-zinc-800 bg-zinc-950 hover:border-zinc-700 text-center transition cursor-pointer">
-                        <div class="text-base">🧠</div>
-                        <div class="text-[10px] font-bold text-zinc-300 truncate">Memory</div>
-                    </button>
-                    <button onclick="selectMiniGame('rps')" id="gameSelectRps" title="Blame Boss RPS" class="p-2 rounded-xl border border-zinc-800 bg-zinc-950 hover:border-zinc-700 text-center transition cursor-pointer">
-                        <div class="text-base">✊</div>
-                        <div class="text-[10px] font-bold text-zinc-300 truncate">Blame</div>
-                    </button>
-                    <button onclick="selectMiniGame('simon')" id="gameSelectSimon" title="Server Simon" class="p-2 rounded-xl border border-zinc-800 bg-zinc-950 hover:border-zinc-700 text-center transition cursor-pointer">
-                        <div class="text-base">🎛️</div>
-                        <div class="text-[10px] font-bold text-zinc-300 truncate">Simon</div>
-                    </button>
-                    <button onclick="selectMiniGame('reflex')" id="gameSelectReflex" title="Coffee Reflex" class="p-2 rounded-xl border border-zinc-800 bg-zinc-950 hover:border-zinc-700 text-center transition cursor-pointer">
-                        <div class="text-base">☕</div>
-                        <div class="text-[10px] font-bold text-zinc-300 truncate">Reflex</div>
-                    </button>
-                    <button onclick="selectMiniGame('math')" id="gameSelectMath" title="Tax Panic Math" class="p-2 rounded-xl border border-zinc-800 bg-zinc-950 hover:border-zinc-700 text-center transition cursor-pointer">
-                        <div class="text-base">🧾</div>
-                        <div class="text-[10px] font-bold text-zinc-300 truncate">Taxes</div>
-                    </button>
-                    <button onclick="selectMiniGame('masher')" id="gameSelectMasher" title="Ctrl+Z Masher" class="p-2 rounded-xl border border-zinc-800 bg-zinc-950 hover:border-zinc-700 text-center transition cursor-pointer">
-                        <div class="text-base">⚡</div>
-                        <div class="text-[10px] font-bold text-zinc-300 truncate">Ctrl+Z</div>
-                    </button>
-                    <button onclick="selectMiniGame('coin')" id="gameSelectCoin" title="Life Decision Flip" class="p-2 rounded-xl border border-zinc-800 bg-zinc-950 hover:border-zinc-700 text-center transition cursor-pointer">
-                        <div class="text-base">🪙</div>
-                        <div class="text-[10px] font-bold text-zinc-300 truncate">Decide</div>
-                    </button>
-                </div>
-
-                <!-- MINI-GAME 1: WHACK-A-BUG -->
-                <div id="miniGameBug" class="mini-game-panel bg-zinc-950 border border-zinc-800 rounded-xl p-4">
-                    <div class="flex items-center justify-between mb-3 font-mono text-xs">
-                        <span class="text-zinc-400">SCORE: <strong id="bugScore" class="text-emerald-400 text-sm">0</strong></span>
-                        <span class="text-zinc-400">TIME: <strong id="bugTimer" class="text-red-400 text-sm">15s</strong></span>
+            <!-- Active Game Play Area -->
+            <div class="flex-grow min-h-[380px] bg-zinc-900 border border-zinc-800 rounded-3xl p-4 sm:p-6 flex flex-col justify-between">
+                <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-zinc-800/80">
+                    <div>
+                        <h2 id="stage-title" class="text-lg sm:text-xl font-black text-white">Select one of the 10 games above</h2>
+                        <p id="stage-desc" class="text-xs text-zinc-400">Every single one was built to prove you don't need a tutorial.</p>
                     </div>
-                    <div id="bugGrid" class="grid grid-cols-3 gap-2 mb-3"></div>
-                    <button onclick="startBugGame()" id="startBugBtn" class="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider transition cursor-pointer">
-                        ▶ Start Squashing Bugs
-                    </button>
-                </div>
-
-                <!-- MINI-GAME 2: DEFUSE THE CRISIS -->
-                <div id="miniGameDefuse" class="mini-game-panel hidden bg-zinc-950 border border-zinc-800 rounded-xl p-4">
-                    <div class="flex items-center justify-between mb-2 font-mono text-xs">
-                        <span class="text-zinc-400">STREAK: <strong id="defuseStreak" class="text-emerald-400 text-sm">0</strong></span>
-                        <span class="text-zinc-400">BEST: <strong id="defuseBest" class="text-yellow-400 text-sm">0</strong></span>
-                    </div>
-                    <p class="text-[11px] text-zinc-400 mb-3 text-center">Stop the needle inside the <span class="text-emerald-400 font-bold">GREEN ZONE</span> to stabilize the server!</p>
-                    <div class="relative w-full h-8 bg-zinc-900 rounded-xl border border-zinc-700 overflow-hidden mb-3">
-                        <div id="defuseSafeZone" class="absolute top-0 bottom-0 bg-emerald-500/30 border-x-2 border-emerald-400" style="left: 38%; width: 24%;"></div>
-                        <div id="defuseCursor" class="absolute top-0 bottom-0 w-1.5 bg-red-500 shadow-[0_0_10px_#ef4444]" style="left: 0%;"></div>
-                    </div>
-                    <p id="defuseStatus" class="text-center font-mono text-xs text-zinc-300 h-4 mb-3">Ready to stabilize?</p>
-                    <button onclick="handleDefuseAction()" id="defuseActionBtn" class="w-full py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs uppercase tracking-wider transition cursor-pointer">
-                        ⚡ Start Reflex Check
-                    </button>
-                </div>
-
-                <!-- MINI-GAME 3: EXCUSE TYPER -->
-                <div id="miniGameTyper" class="mini-game-panel hidden bg-zinc-950 border border-zinc-800 rounded-xl p-4">
-                    <div class="flex items-center justify-between mb-2 font-mono text-xs">
-                        <span class="text-zinc-400">EXCUSES SENT: <strong id="typerScore" class="text-emerald-400 text-sm">0</strong></span>
-                        <span class="text-zinc-400">TIME: <strong id="typerTimer" class="text-red-400 text-sm">20s</strong></span>
-                    </div>
-                    <div class="p-3 rounded-lg bg-zinc-900 border border-zinc-800 mb-2.5 text-center">
-                        <span class="text-[10px] font-mono text-zinc-500 uppercase block mb-1">TYPE THIS ALIBI FAST:</span>
-                        <p id="typerTarget" class="font-mono text-sm font-bold text-yellow-400 select-none">Press Start Below</p>
-                    </div>
-                    <input type="text" id="typerInput" oninput="checkTyperInput()" disabled placeholder="Type here..." class="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-700 text-white font-mono text-xs focus:outline-none focus:border-red-500 mb-3">
-                    <button onclick="startTyperGame()" id="startTyperBtn" class="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider transition cursor-pointer">
-                        ▶ Start Typing Excuses
-                    </button>
-                </div>
-
-                <!-- MINI-GAME 4: PANIC MEMORY -->
-                <div id="miniGameMemory" class="mini-game-panel hidden bg-zinc-950 border border-zinc-800 rounded-xl p-4">
-                    <div class="flex items-center justify-between mb-2 font-mono text-xs">
-                        <span class="text-zinc-400">PAIRS: <strong id="memPairs" class="text-emerald-400 text-sm">0/6</strong></span>
-                        <span class="text-zinc-400">MOVES: <strong id="memMoves" class="text-yellow-400 text-sm">0</strong></span>
-                    </div>
-                    <div id="memoryGrid" class="grid grid-cols-4 gap-1.5 mb-3"></div>
-                    <button onclick="initMemoryGame()" class="w-full py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs uppercase tracking-wider transition cursor-pointer">
-                        🔄 Shuffle Crisis Cards
-                    </button>
-                </div>
-
-                <!-- MINI-GAME 5: BLAME THE BOSS (RPS) -->
-                <div id="miniGameRps" class="mini-game-panel hidden bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-center">
-                    <div class="flex items-center justify-between mb-3 font-mono text-xs">
-                        <span class="text-zinc-400">YOU: <strong id="rpsYou" class="text-emerald-400 text-sm">0</strong></span>
-                        <span class="text-zinc-400">BOSS: <strong id="rpsBot" class="text-red-400 text-sm">0</strong></span>
-                    </div>
-                    <p id="rpsResult" class="text-xs font-mono text-zinc-300 bg-zinc-900 p-2.5 rounded-lg border border-zinc-800 mb-3">Pick a weapon to escape blame!</p>
-                    <div class="grid grid-cols-3 gap-2">
-                        <button onclick="playRps('dns')" class="p-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-center cursor-pointer transition">
-                            <div class="text-xl mb-1">🌐</div>
-                            <div class="text-[11px] font-bold text-white">Blame DNS</div>
-                        </button>
-                        <button onclick="playRps('wifi')" class="p-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-center cursor-pointer transition">
-                            <div class="text-xl mb-1">📶</div>
-                            <div class="text-[11px] font-bold text-white">Bad Wi-Fi</div>
-                        </button>
-                        <button onclick="playRps('intern')" class="p-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-center cursor-pointer transition">
-                            <div class="text-xl mb-1">🧑‍🎓</div>
-                            <div class="text-[11px] font-bold text-white">The Intern</div>
-                        </button>
+                    <div id="stage-hud" class="font-mono text-xs sm:text-sm font-bold px-3.5 py-1.5 rounded-xl bg-zinc-950 border border-zinc-800 text-amber-400">
+                        Score: 0
                     </div>
                 </div>
 
-                <!-- MINI-GAME 6: SERVER SIMON SAYS -->
-                <div id="miniGameSimon" class="mini-game-panel hidden bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-center">
-                    <div class="flex items-center justify-between mb-2 font-mono text-xs">
-                        <span class="text-zinc-400">ROUND: <strong id="simonRound" class="text-emerald-400 text-sm">0</strong></span>
-                        <span id="simonStatus" class="text-yellow-400">Press Start</span>
+                <!-- Dynamic Game Mount Point -->
+                <div id="game-mount" class="flex-grow flex items-center justify-center py-4 relative min-h-[280px]">
+                    <div class="text-center text-zinc-500 text-sm font-mono">
+                        Click any of the 10 numbered games above to start. No hand-holding included.
                     </div>
-                    <div class="grid grid-cols-2 gap-2 mb-3">
-                        <button onclick="pressSimon(0)" id="simonBtn0" class="h-14 rounded-xl bg-red-900/50 border-2 border-red-500/50 hover:opacity-90 transition cursor-pointer font-mono text-xs font-bold text-red-200">ALERT 1</button>
-                        <button onclick="pressSimon(1)" id="simonBtn1" class="h-14 rounded-xl bg-emerald-900/50 border-2 border-emerald-500/50 hover:opacity-90 transition cursor-pointer font-mono text-xs font-bold text-emerald-200">ALERT 2</button>
-                        <button onclick="pressSimon(2)" id="simonBtn2" class="h-14 rounded-xl bg-blue-900/50 border-2 border-blue-500/50 hover:opacity-90 transition cursor-pointer font-mono text-xs font-bold text-blue-200">ALERT 3</button>
-                        <button onclick="pressSimon(3)" id="simonBtn3" class="h-14 rounded-xl bg-yellow-900/50 border-2 border-yellow-500/50 hover:opacity-90 transition cursor-pointer font-mono text-xs font-bold text-yellow-200">ALERT 4</button>
-                    </div>
-                    <button onclick="startSimonGame()" id="startSimonBtn" class="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider transition cursor-pointer">
-                        ▶ Start Server Sequence
-                    </button>
                 </div>
 
-                <!-- MINI-GAME 7: COFFEE REFLEX TEST -->
-                <div id="miniGameReflex" class="mini-game-panel hidden bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-center">
-                    <div class="flex items-center justify-between mb-2 font-mono text-xs">
-                        <span class="text-zinc-400">LAST: <strong id="reflexLast" class="text-emerald-400 text-sm">-- ms</strong></span>
-                        <span class="text-zinc-400">BEST: <strong id="reflexBest" class="text-yellow-400 text-sm">-- ms</strong></span>
-                    </div>
-                    <button onclick="handleReflexClick()" id="reflexBox" class="w-full h-28 rounded-xl bg-zinc-900 border-2 border-zinc-700 flex flex-col items-center justify-center cursor-pointer transition select-none">
-                        <span class="text-2xl mb-1">☕</span>
-                        <span id="reflexText" class="font-bold text-sm text-white">Click Here to Start Reflex Test</span>
-                        <span id="reflexSub" class="text-[11px] font-mono text-zinc-400 mt-0.5">Tap as soon as it turns GREEN!</span>
-                    </button>
-                </div>
-
-                <!-- MINI-GAME 8: TAX PANIC MATH -->
-                <div id="miniGameMath" class="mini-game-panel hidden bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-center">
-                    <div class="flex items-center justify-between mb-2 font-mono text-xs">
-                        <span class="text-zinc-400">SOLVED: <strong id="mathScore" class="text-emerald-400 text-sm">0</strong></span>
-                        <span class="text-zinc-400">TIME: <strong id="mathTimer" class="text-red-400 text-sm">15s</strong></span>
-                    </div>
-                    <div class="p-3 rounded-xl bg-zinc-900 border border-zinc-800 mb-3">
-                        <p class="text-[10px] font-mono text-zinc-500 uppercase mb-1">QUICK! CALCULATE EMERGENCY TAX:</p>
-                        <div id="mathQuestion" class="text-2xl font-black text-white font-mono">? + ? = ?</div>
-                    </div>
-                    <div id="mathOptions" class="grid grid-cols-3 gap-2 mb-3">
-                        <button disabled class="py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-500 font-mono text-sm">-</button>
-                        <button disabled class="py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-500 font-mono text-sm">-</button>
-                        <button disabled class="py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-500 font-mono text-sm">-</button>
-                    </div>
-                    <button onclick="startMathGame()" id="startMathBtn" class="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider transition cursor-pointer">
-                        ▶ Start Tax Audit
-                    </button>
-                </div>
-
-                <!-- MINI-GAME 9: CTRL+Z PANIC MASHER -->
-                <div id="miniGameMasher" class="mini-game-panel hidden bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-center">
-                    <div class="flex items-center justify-between mb-2 font-mono text-xs">
-                        <span class="text-zinc-400">UNDOS: <strong id="masherCount" class="text-emerald-400 text-sm">0</strong></span>
-                        <span class="text-zinc-400">TIME: <strong id="masherTimer" class="text-red-400 text-sm">10.0s</strong></span>
-                    </div>
-                    <p class="text-[11px] text-zinc-400 mb-3">You just deleted production! Mash <strong class="text-white">CTRL + Z</strong> as fast as possible!</p>
-                    <button onclick="handleMasherClick()" id="masherBtn" class="w-full py-5 rounded-xl bg-red-600 hover:bg-red-500 active:scale-95 text-white font-black text-lg tracking-wider shadow-lg shadow-red-600/20 transition cursor-pointer select-none">
-                        ⏪ CTRL + Z (START)
-                    </button>
-                </div>
-
-                <!-- MINI-GAME 10: LIFE DECISION ORACLE -->
-                <div id="miniGameCoin" class="mini-game-panel hidden bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-center">
-                    <p class="text-[11px] font-mono text-zinc-400 mb-2">Can't make a life choice? Let ajuuw's Coin decide:</p>
-                    <div id="coinDisplay" class="w-20 h-20 rounded-full bg-zinc-900 border-2 border-yellow-500/60 mx-auto flex items-center justify-center text-3xl mb-2 shadow-lg">
-                        🪙
-                    </div>
-                    <p id="coinVerdict" class="font-bold text-sm text-white mb-3 min-h-[20px]">Flip to seal your fate...</p>
-                    <button onclick="flipDecisionCoin()" class="w-full py-2.5 rounded-xl bg-yellow-500 hover:bg-yellow-400 text-zinc-950 font-black text-xs uppercase tracking-wider transition cursor-pointer">
-                        🎲 Make My Decision
+                <div id="stage-footer" class="pt-3 border-t border-zinc-800/80 flex items-center justify-between text-xs font-mono text-zinc-500">
+                    <span id="stage-snark">Self-sufficiency rating: 100%</span>
+                    <button id="restart-game-btn" onclick="restartCurrentGame()" class="hidden px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-bold cursor-pointer">
+                        Restart Game
                     </button>
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- Footer -->
-    <footer class="max-w-5xl w-full mx-auto px-4 py-6 border-t border-zinc-900 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-zinc-500">
-        <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-center sm:text-left">
-            <span>⚠️ Not affiliated with actual emergency services. If you're on fire, close this tab.</span>
-            <button onclick="openContactModal()" class="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 transition cursor-pointer">
-                📩 Contact Us
-            </button>
-        </div>
-        <div>
-            Panic Count: <span id="userPanicCount" class="text-zinc-300 font-bold">0</span>
-        </div>
-    </footer>
 
     <script>
-        // --- DATA: Hilarious Crisis Categories & Responses ---
-        const crisisData = [
-            {
-                id: 'social',
-                icon: '😬',
-                label: 'Awkward Conversation',
-                desc: 'Trapped by a talker',
-                responses: [
-                    {
-                        unit: 'TACTICAL EXTRACTION SQUAD',
-                        title: 'Deploying Imaginary Urgent Errand',
-                        msg: 'Look slightly behind their left shoulder, widen your eyes by 15%, pat your pockets frantically, and whisper "Oh no, my sourdough starter."',
-                        alibi: 'I am so sorry to cut you off, I just remembered I left my oven on... and I don’t even own an oven. Gotta run!',
-                        eta: '3 Seconds'
-                    },
-                    {
-                        unit: 'DIPLOMATIC IMMUNITY UNIT',
-                        title: 'The "Fake Phone Call" Maneuver',
-                        msg: 'Use the "Fake Incoming Call" button below. Answer it loudly saying "WHAT?! THE MAYOR NEEDS ME AGAIN?!" and briskly walk away.',
-                        alibi: 'Hold on, my goldfish is having a medical emergency. Text me!',
-                        eta: 'Immediate'
-                    }
-                ]
-            },
-            {
-                id: 'work',
-                icon: '💻',
-                label: 'Work / Code Broke',
-                desc: 'Friday 4:59 PM disaster',
-                responses: [
-                    {
-                        unit: 'SENIOR DEV GASLIGHTING DIVISION',
-                        title: 'Blame Caching or DNS',
-                        msg: 'Do not panic. Remember the golden rule of IT: It’s always DNS, and if it’s not DNS, tell them to clear their browser cache and restart.',
-                        alibi: 'Looks like a transient upstream DNS propagation issue mixed with aggressive CDN caching. Monitoring it closely!',
-                        eta: 'Until Monday 9:00 AM'
-                    },
-                    {
-                        unit: 'CORPORATE JARGON SHIELD',
-                        title: 'Buy Yourself 48 Hours',
-                        msg: 'Reply to the angry email thread with buzzwords so confusing nobody will dare ask a follow-up question.',
-                        alibi: 'Let’s circle back offline to align on the bandwidth for this paradigm shift before we boil the ocean.',
-                        eta: 'Next Quarter'
-                    }
-                ]
-            },
-            {
-                id: 'adulting',
-                icon: '🧾',
-                label: 'Adulting Failure',
-                desc: 'Taxes, bills, or laundry',
-                responses: [
-                    {
-                        unit: 'MINISTRY OF DENIAL',
-                        title: 'Out of Sight, Out of Mind',
-                        msg: 'Put the unopened mail inside a drawer. Put a heavier object on top of the drawer. Go drink a glass of water and lie down.',
-                        alibi: 'I am currently prioritizing my mental bandwidth and practicing intentional inbox minimalism.',
-                        eta: 'When you turn 40'
-                    },
-                    {
-                        unit: 'CULINARY RESCUE TEAM',
-                        title: 'Cereal is a Valid Dinner',
-                        msg: 'You don’t need to cook a balanced meal tonight. Cereal is just cold soup with croutons. You are doing great sweetie.',
-                        alibi: 'I’m doing an intermittent deconstructed grain-and-dairy tasting menu tonight.',
-                        eta: '2 Minutes'
-                    }
-                ]
-            },
-            {
-                id: 'text',
-                icon: '📱',
-                label: 'Sent Risky Text',
-                desc: 'Regret level: 1000%',
-                responses: [
-                    {
-                        unit: 'CYBER WITNESS PROTECTION',
-                        title: 'Initiate Airplane Mode',
-                        msg: 'Turn on Airplane Mode immediately. Throw your phone into a couch cushion. Move to a small coastal village under a new alias.',
-                        alibi: 'Haha sorry my little cousin grabbed my phone!! So random lol!!',
-                        eta: 'Too late, they saw it'
-                    },
-                    {
-                        unit: 'DAMAGE CONTROL UNIT',
-                        title: 'Double Down With Nonsense',
-                        msg: 'Follow up the risky text with a completely unrelated gibberish message so it looks like your pocket dialed them.',
-                        alibi: 'asdfghjkl;; sorry my cat literally just walked across my keyboard',
-                        eta: '0.5 Seconds'
-                    }
-                ]
-            },
-            {
-                id: 'existential',
-                icon: '🌀',
-                label: 'Existential Dread',
-                desc: '3 AM overthinking',
-                responses: [
-                    {
-                        unit: 'COSMIC PERSPECTIVE PATROL',
-                        title: 'Reminder: You Are a Floating Rock',
-                        msg: 'Nobody remembers that embarrassing thing you said in 2016. We are all just weirdly anxious houseplants with Wi-Fi.',
-                        alibi: 'I am unavailable for existential crises at this time. Please leave a message after the nap.',
-                        eta: 'After 8 hours of sleep'
-                    }
-                ]
-            },
-            {
-                id: 'bathroom',
-                icon: '🧻',
-                label: 'No Toilet Paper',
-                desc: 'Code Brown Emergency',
-                responses: [
-                    {
-                        unit: 'HAZMAT AIRDROP COMMAND',
-                        title: 'Assess Your Surroundings',
-                        msg: 'Check under the sink. Check the cardboard roll—can it be peeled into layers? Look at the decorative guest towels. Forgive yourself.',
-                        alibi: 'HEY! CAN SOMEONE BRING ME A FRESH ROLL?! DO NOT OPEN THE DOOR!',
-                        eta: 'Praying for you'
-                    }
-                ]
+        /* =========================================================================
+           SARCASM ENGINE & MODAL CONTROLS
+        ========================================================================= */
+        const sarcasmLines = [
+            "Status: Totally fine, thanks.",
+            "Warning: Unsolicited advice will be ignored.",
+            "I read the manual. Actually, no I didn't—still figured it out.",
+            "Need help? Never heard of it.",
+            "My coping mechanism is beating 10 weird mini-games solo."
+        ];
+        let sarcasmIdx = 0;
+
+        function cycleSarcasm() {
+            sarcasmIdx = (sarcasmIdx + 1) % sarcasmLines.length;
+            document.getElementById('sarcastic-ticker').textContent = sarcasmLines[sarcasmIdx];
+        }
+
+        const pokeReplies = [
+            "Ow. That didn't change my mind—I'm still good.",
+            "You poked a website and expected gratitude? Bold.",
+            "Careful, poking too much might unlock mild enthusiasm.",
+            "Still don't need help. Still clicking buttons like a gremlin.",
+            "Plot twist: the website is also unbothered."
+        ];
+        let pokeCount = 0;
+
+        function updateGoodMeter(val) {
+            const num = parseInt(val, 10);
+            const label = document.getElementById('good-meter-label');
+            const reply = document.getElementById('interactive-reply');
+
+            let verdict = "Unbothered";
+            let line = "Suspiciously calm. Go play a game before peace settles in.";
+            if (num < 25) {
+                verdict = "Dramatically Fine";
+                line = "0% help requested, 100% theatrical eye-roll.";
+            } else if (num < 60) {
+                verdict = "Selective Listener";
+                line = "I heard you. I just chose to ignore it.";
+            } else if (num < 90) {
+                verdict = "Unbothered";
+                line = "Peak self-reliance. No notes, no coaches, no backseat drivers.";
+            } else {
+                verdict = "Aggressively Good";
+                line = "So good I might even win one of these 10 games. Maybe.";
             }
+
+            label.textContent = `${num}% — ${verdict}`;
+            reply.textContent = line;
+        }
+
+        function setMoodPreset(mode) {
+            const slider = document.getElementById('good-meter-slider');
+            const reply = document.getElementById('interactive-reply');
+            if (mode === 'unbothered') {
+                slider.value = 88;
+                updateGoodMeter(88);
+            } else if (mode === 'chaotic') {
+                slider.value = 42;
+                updateGoodMeter(42);
+                reply.textContent = "Chaos mode: open all 10 games mentally and pick the hardest one.";
+            } else if (mode === 'petty') {
+                slider.value = 96;
+                updateGoodMeter(96);
+                reply.textContent = "Petty mode: thanks for the suggestion, I'll file it under 'later'.";
+            }
+        }
+
+        function pokeThePage() {
+            pokeCount++;
+            const reply = document.getElementById('interactive-reply');
+            reply.textContent = `[Poke #${pokeCount}] ${pokeReplies[(pokeCount - 1) % pokeReplies.length]}`;
+        }
+
+        const ajuReplies = [
+            "Aju received your message, read it twice, and replied 'k' in spirit.",
+            "Aju is busy not needing help right now. Leave a funny note after the beep.",
+            "Message sent to Aju's imaginary inbox. Response time: whenever Aju feels like it.",
+            "Aju says thanks for reaching out—please don't offer advice though."
+        ];
+        let ajuPingCount = 0;
+
+        function contactAju() {
+            ajuPingCount++;
+            const box = document.getElementById('aju-contact-reply');
+            box.classList.remove('hidden');
+            box.textContent = `[Ping #${ajuPingCount}] ${ajuReplies[(ajuPingCount - 1) % ajuReplies.length]}`;
+        }
+
+        function openGamesVault() {
+            document.getElementById('games-vault-modal').classList.remove('hidden');
+            if (!currentGameId) {
+                launchGame(1);
+            }
+        }
+
+        function closeGamesVault() {
+            cleanupCurrentGame();
+            document.getElementById('games-vault-modal').classList.add('hidden');
+        }
+
+        /* =========================================================================
+           10 CREATIVE GAMES DEFINITION & LIFECYCLE
+        ========================================================================= */
+        const CREATIVE_GAMES = [
+            { id: 1, name: "Bubble Pop Rage", tag: "Reflex", desc: "Pop glowing bubbles before they shrink into nothing. Missing one judges you." },
+            { id: 2, name: "Reaction Flatline", tag: "Speed", desc: "Wait for EMERALD GREEN, then click immediately. Click early and look impatient." },
+            { id: 3, name: "Orbit Dodger", tag: "Arcade", desc: "Move your cursor or finger to dodge rogue red comets circling the center." },
+            { id: 4, name: "Math Speedrun", tag: "Brain", desc: "Solve quick arithmetic before the timer runs out. Obviously easy for someone like you." },
+            { id: 5, name: "Simon Says Chaos", tag: "Memory", desc: "Repeat the 4-pad light sequence without blinking." },
+            { id: 6, name: "Precision Stopper", tag: "Timing", desc: "Stop the sliding bar right inside the golden bullseye zone." },
+            { id: 7, name: "Color Stroop Trick", tag: "Focus", desc: "Click the INK COLOR of the word—not what the word says!" },
+            { id: 8, name: "Meteor Catcher", tag: "Catch", desc: "Slide the basket to catch golden stars and avoid spicy bombs." },
+            { id: 9, name: "Codebreaker Locks", tag: "Logic", desc: "Guess the 3-digit secret combo using Higher / Lower / Exact clues." },
+            { id: 10, name: "Click Storm 5s", tag: "Stamina", desc: "Mash the button as fast as humanly possible in 5 seconds." }
         ];
 
-        const loadingSteps = [
-            "Locating nearest responsible adult...",
-            "Error 404: Adult not found. Asking a golden retriever...",
-            "Calculating optimal excuse trajectory...",
-            "Consulting the council of bad decisions...",
-            "Generating legally questionable alibi..."
-        ];
+        let currentGameId = null;
+        let activeCleanup = null;
 
-        // --- STATE ---
-        let selectedCategory = crisisData[0].id;
-        let soundEnabled = true;
-        let panicCount = 0;
-        let currentAlibi = "";
-        let isDispatching = false;
-        let ringtoneInterval = null;
-
-        // --- INIT ---
-        window.onload = () => {
-            renderCategories();
-            updateLiveCounter();
-        };
-
-        // Spacebar shortcut to smash the panic button
-        document.addEventListener('keydown', (e) => {
-            if (e.code === 'Space' && document.activeElement.tagName !== 'BUTTON') {
-                e.preventDefault();
-                const btn = document.getElementById('panicButton');
-                btn.classList.add('pressed');
-                setTimeout(() => btn.classList.remove('pressed'), 120);
-                triggerHelp();
-            }
-        });
-
-        // Render Category Cards
-        function renderCategories() {
-            const grid = document.getElementById('categoryGrid');
-            grid.innerHTML = crisisData.map(cat => {
-                const isSelected = cat.id === selectedCategory;
+        function renderGamePicker() {
+            const grid = document.getElementById('game-picker-grid');
+            grid.innerHTML = CREATIVE_GAMES.map(g => {
+                const isSelected = g.id === currentGameId;
                 return `
-                    <button onclick="selectCategory('${cat.id}')" 
-                        class="p-3 rounded-xl border text-left transition-all cursor-pointer flex items-start gap-3 ${
-                            isSelected 
-                            ? 'bg-red-600/15 border-red-500 shadow-lg shadow-red-600/10' 
-                            : 'bg-zinc-900/80 border-zinc-800 hover:border-zinc-700'
+                    <button onclick="launchGame(${g.id})" id="game-card-${g.id}"
+                        class="text-left p-3 rounded-2xl border transition cursor-pointer ${
+                            isSelected
+                                ? 'bg-sky-500 text-zinc-950 border-sky-400 shadow-lg shadow-sky-500/20'
+                                : 'bg-zinc-900 hover:bg-zinc-800/90 text-zinc-200 border-zinc-800'
                         }">
-                        <span class="text-2xl mt-0.5">${cat.icon}</span>
-                        <div>
-                            <div class="font-bold text-xs sm:text-sm ${isSelected ? 'text-white' : 'text-zinc-200'}">${cat.label}</div>
-                            <div class="text-[11px] text-zinc-400 leading-tight mt-0.5">${cat.desc}</div>
+                        <div class="flex items-center justify-between text-[11px] font-mono font-bold mb-1 ${isSelected ? 'text-zinc-900' : 'text-amber-400'}">
+                            <span>GAME #${g.id}</span>
+                            <span>${g.tag}</span>
                         </div>
+                        <div class="font-extrabold text-xs sm:text-sm leading-snug truncate">${g.name}</div>
                     </button>
                 `;
             }).join('');
         }
 
-        function selectCategory(id) {
-            selectedCategory = id;
-            renderCategories();
-            playClickSound();
-        }
-
-        // --- SOUND EFFECTS (Tone.js) ---
-        function toggleSound() {
-            soundEnabled = !soundEnabled;
-            document.getElementById('soundIcon').textContent = soundEnabled ? '🔊' : '🔇';
-            document.getElementById('soundText').textContent = soundEnabled ? 'SFX: ON' : 'SFX: OFF';
-        }
-
-        async function playClickSound() {
-            if (!soundEnabled) return;
-            try {
-                await Tone.start();
-                const synth = new Tone.MembraneSynth().toDestination();
-                synth.triggerAttackRelease("C3", "32n");
-            } catch (e) {}
-        }
-
-        async function playAlarmSound() {
-            if (!soundEnabled) return;
-            try {
-                await Tone.start();
-                const synth = new Tone.Synth({
-                    oscillator: { type: "sawtooth" },
-                    envelope: { attack: 0.05, decay: 0.2, sustain: 0.2, release: 0.2 }
-                }).toDestination();
-                synth.volume.value = -12;
-                const now = Tone.now();
-                synth.triggerAttackRelease("A4", "16n", now);
-                synth.triggerAttackRelease("E5", "16n", now + 0.12);
-                synth.triggerAttackRelease("A4", "16n", now + 0.24);
-            } catch (e) {}
-        }
-
-        // --- MAIN PANIC LOGIC ---
-        function triggerHelp() {
-            if (isDispatching) return;
-            isDispatching = true;
-
-            playAlarmSound();
-
-            // Update counter
-            panicCount++;
-            document.getElementById('userPanicCount').textContent = panicCount;
-
-            // Show console
-            const consoleEl = document.getElementById('dispatchConsole');
-            const progressContainer = document.getElementById('progressContainer');
-            const resultContent = document.getElementById('resultContent');
-            const progressBar = document.getElementById('progressBar');
-            const loadingText = document.getElementById('loadingText');
-            const loadingPercent = document.getElementById('loadingPercent');
-            const statusBadge = document.getElementById('statusBadge');
-
-            consoleEl.classList.remove('hidden');
-            progressContainer.classList.remove('hidden');
-            resultContent.classList.add('hidden');
-            
-            // Random ticket ID
-            const ticketNum = Math.floor(1000 + Math.random() * 9000);
-            document.getElementById('ticketId').textContent = `TICKET #SH-${ticketNum}`;
-            statusBadge.textContent = "DISPATCHING...";
-            statusBadge.className = "px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-yellow-500/20 text-yellow-400 border border-yellow-500/30";
-
-            // Scroll smoothly to console on mobile
-            consoleEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
-            // Fake rapid loading animation
-            let progress = 0;
-            loadingText.textContent = loadingSteps[Math.floor(Math.random() * loadingSteps.length)];
-            
-            const interval = setInterval(() => {
-                progress += Math.floor(Math.random() * 25) + 15;
-                if (progress >= 100) {
-                    progress = 100;
-                    clearInterval(interval);
-                    showFinalDispatch();
-                }
-                progressBar.style.width = `${progress}%`;
-                loadingPercent.textContent = `${progress}%`;
-            }, 140);
-        }
-
-        function showFinalDispatch() {
-            const category = crisisData.find(c => c.id === selectedCategory);
-            const randomResponse = category.responses[Math.floor(Math.random() * category.responses.length)];
-
-            document.getElementById('dispatchUnit').textContent = `UNIT DISPATCHED: ${randomResponse.unit}`;
-            document.getElementById('dispatchTitle').textContent = randomResponse.title;
-            document.getElementById('dispatchMessage').textContent = randomResponse.msg;
-            document.getElementById('alibiText').textContent = `"${randomResponse.alibi}"`;
-            document.getElementById('etaText').textContent = randomResponse.eta;
-            currentAlibi = randomResponse.alibi;
-
-            document.getElementById('progressContainer').classList.add('hidden');
-            document.getElementById('resultContent').classList.remove('hidden');
-
-            const statusBadge = document.getElementById('statusBadge');
-            statusBadge.textContent = "HELP DEPLOYED";
-            statusBadge.className = "px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
-
-            isDispatching = false;
-        }
-
-        // --- COPY ALIBI ---
-        function copyAlibi() {
-            const tempInput = document.createElement("textarea");
-            tempInput.value = currentAlibi;
-            document.body.appendChild(tempInput);
-            tempInput.select();
-            document.execCommand("copy");
-            document.body.removeChild(tempInput);
-
-            showToast("📋 Excuse copied! Go paste it before they suspect anything.");
-        }
-
-        // --- FAKE INCOMING CALL SIMULATOR ---
-        function triggerFakeCall() {
-            const callers = [
-                { name: "Grandma (URGENT)", sub: "Mobile • +1 (555) 867-5309" },
-                { name: "The IRS / Tax Dept", sub: "Government • +1 (800) 555-0192" },
-                { name: "Your Cat's Lawyer", sub: "Work • +1 (555) 636-9636" },
-                { name: "NASA Mission Control", sub: "Houston • +1 (281) 555-0100" }
-            ];
-            const picked = callers[Math.floor(Math.random() * callers.length)];
-            document.getElementById('callerName').textContent = picked.name;
-            document.getElementById('callerSub').textContent = picked.sub;
-
-            const modal = document.getElementById('fakeCallModal');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-
-            // Play ringtone beep if sound is ON
-            if (soundEnabled) {
-                playRingtone();
-                ringtoneInterval = setInterval(playRingtone, 2000);
+        function cleanupCurrentGame() {
+            if (typeof activeCleanup === 'function') {
+                activeCleanup();
+                activeCleanup = null;
             }
         }
 
-        async function playRingtone() {
-            if (!soundEnabled) return;
-            try {
-                await Tone.start();
-                const synth = new Tone.Synth().toDestination();
-                synth.volume.value = -10;
-                const now = Tone.now();
-                synth.triggerAttackRelease("E5", "16n", now);
-                synth.triggerAttackRelease("G5", "16n", now + 0.1);
-                synth.triggerAttackRelease("E5", "16n", now + 0.2);
-                synth.triggerAttackRelease("G5", "16n", now + 0.3);
-            } catch (e) {}
+        function setHud(text) {
+            document.getElementById('stage-hud').textContent = text;
         }
 
-        function acceptFakeCall() {
-            clearInterval(ringtoneInterval);
-            document.getElementById('callerSub').textContent = "00:01 • Connected (Say 'WHAT?! NO WAY!' and walk out)";
-            document.getElementById('acceptCallBtn').classList.add('hidden');
+        function restartCurrentGame() {
+            if (currentGameId) launchGame(currentGameId);
         }
 
-        function closeFakeCall() {
-            clearInterval(ringtoneInterval);
-            const modal = document.getElementById('fakeCallModal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-            document.getElementById('acceptCallBtn').classList.remove('hidden');
-        }
+        function launchGame(id) {
+            cleanupCurrentGame();
+            currentGameId = id;
+            renderGamePicker();
 
-        // --- TOAST & LIVE COUNTER ---
-        function showToast(msg) {
-            const toast = document.getElementById('toast');
-            toast.textContent = msg;
-            toast.classList.remove('translate-y-20', 'opacity-0');
-            setTimeout(() => {
-                toast.classList.add('translate-y-20', 'opacity-0');
-            }, 3000);
-        }
+            const game = CREATIVE_GAMES.find(g => g.id === id);
+            document.getElementById('active-game-label').textContent = `Playing #${game.id}: ${game.name}`;
+            document.getElementById('stage-title').textContent = `${game.id}. ${game.name}`;
+            document.getElementById('stage-desc').textContent = game.desc;
+            document.getElementById('restart-game-btn').classList.remove('hidden');
 
-        function updateLiveCounter() {
-            const el = document.getElementById('liveCount');
-            let count = 4812;
-            setInterval(() => {
-                count += Math.floor(Math.random() * 5) - 2;
-                el.textContent = count.toLocaleString();
-            }, 2500);
-        }
+            const mount = document.getElementById('game-mount');
+            mount.innerHTML = '';
 
-        // --- CONTACT MODAL ---
-        function openContactModal() {
-            playClickSound();
-            const modal = document.getElementById('contactModal');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            initBugGrid();
-        }
+            const runners = {
+                1: runGame1BubblePop,
+                2: runGame2Reaction,
+                3: runGame3OrbitDodger,
+                4: runGame4MathSpeedrun,
+                5: runGame5Simon,
+                6: runGame6PrecisionStopper,
+                7: runGame7Stroop,
+                8: runGame8MeteorCatcher,
+                9: runGame9Codebreaker,
+                10: runGame10ClickStorm
+            };
 
-        function closeContactModal() {
-            playClickSound();
-            stopAllMiniGames();
-            const modal = document.getElementById('contactModal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-        }
-
-        function switchContactTab(tab) {
-            playClickSound();
-            const aboutTab = document.getElementById('contactTabAbout');
-            const gamesTab = document.getElementById('contactTabGames');
-            const aboutBtn = document.getElementById('tabAboutBtn');
-            const gamesBtn = document.getElementById('tabGamesBtn');
-
-            if (tab === 'about') {
-                stopAllMiniGames();
-                aboutTab.classList.remove('hidden');
-                gamesTab.classList.add('hidden');
-                aboutBtn.className = 'flex-1 py-1.5 px-3 rounded-lg text-xs font-bold bg-red-600 text-white transition cursor-pointer';
-                gamesBtn.className = 'flex-1 py-1.5 px-3 rounded-lg text-xs font-bold text-zinc-400 hover:text-white transition cursor-pointer';
-            } else {
-                aboutTab.classList.add('hidden');
-                gamesTab.classList.remove('hidden');
-                gamesBtn.className = 'flex-1 py-1.5 px-3 rounded-lg text-xs font-bold bg-red-600 text-white transition cursor-pointer';
-                aboutBtn.className = 'flex-1 py-1.5 px-3 rounded-lg text-xs font-bold text-zinc-400 hover:text-white transition cursor-pointer';
-                initBugGrid();
+            if (runners[id]) {
+                activeCleanup = runners[id](mount);
             }
+            lucide.createIcons();
         }
 
-        function selectMiniGame(game) {
-            playClickSound();
-            stopAllMiniGames();
-            const games = ['bug', 'defuse', 'typer', 'memory', 'rps', 'simon', 'reflex', 'math', 'masher', 'coin'];
-            games.forEach(g => {
-                const cap = g.charAt(0).toUpperCase() + g.slice(1);
-                const panel = document.getElementById(`miniGame${cap}`);
-                const btn = document.getElementById(`gameSelect${cap}`);
-                if (!panel || !btn) return;
-                if (g === game) {
-                    panel.classList.remove('hidden');
-                    btn.className = 'p-2 rounded-xl border border-red-500 bg-red-600/15 text-center transition cursor-pointer';
-                    btn.querySelector('div:last-child').className = 'text-[10px] font-bold text-white truncate';
-                } else {
-                    panel.classList.add('hidden');
-                    btn.className = 'p-2 rounded-xl border border-zinc-800 bg-zinc-950 hover:border-zinc-700 text-center transition cursor-pointer';
-                    btn.querySelector('div:last-child').className = 'text-[10px] font-bold text-zinc-300 truncate';
-                }
-            });
-            if (game === 'memory') initMemoryGame();
-        }
+        /* -------------------------------------------------------------------------
+           GAME 1: BUBBLE POP RAGE
+        ------------------------------------------------------------------------- */
+        function runGame1BubblePop(mount) {
+            let score = 0;
+            let misses = 0;
+            setHud('Popped: 0 | Missed: 0/5');
 
-        function stopAllMiniGames() {
-            clearInterval(bugTimerInterval);
-            clearInterval(bugSpawnInterval);
-            bugGameActive = false;
-            cancelAnimationFrame(defuseAnimFrame);
-            defuseRunning = false;
-            clearInterval(typerTimerInterval);
-            typerActive = false;
-            clearTimeout(reflexTimeout);
-            reflexState = 'idle';
-            clearInterval(mathTimerInterval);
-            mathActive = false;
-            clearInterval(masherInterval);
-            masherActive = false;
-        }
+            const arena = document.createElement('div');
+            arena.className = 'w-full h-72 bg-zinc-950 rounded-2xl border border-zinc-800 relative overflow-hidden';
+            mount.appendChild(arena);
 
-        // --- MINI-GAME 1: WHACK-A-BUG ---
-        let bugScore = 0;
-        let bugTimeLeft = 15;
-        let bugGameActive = false;
-        let activeBugIndex = -1;
-        let bugTimerInterval = null;
-        let bugSpawnInterval = null;
+            const spawnInterval = setInterval(() => {
+                if (misses >= 5) return;
+                const bubble = document.createElement('button');
+                const size = 44 + Math.floor(Math.random() * 24);
+                const maxX = Math.max(20, arena.clientWidth - size - 10);
+                const maxY = Math.max(20, arena.clientHeight - size - 10);
+                bubble.style.width = size + 'px';
+                bubble.style.height = size + 'px';
+                bubble.style.left = Math.random() * maxX + 'px';
+                bubble.style.top = Math.random() * maxY + 'px';
+                bubble.className = 'absolute rounded-full bg-sky-400/90 hover:bg-amber-300 text-zinc-950 font-black text-xs flex items-center justify-center shadow-lg transition-transform cursor-pointer';
+                bubble.textContent = 'POP';
 
-        function initBugGrid() {
-            const grid = document.getElementById('bugGrid');
-            if (!grid) return;
-            grid.innerHTML = Array.from({ length: 9 }, (_, i) => `
-                <button onclick="whackBug(${i})" id="bugCell-${i}" 
-                    class="h-14 sm:h-16 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 flex items-center justify-center text-2xl transition-transform active:scale-90 cursor-pointer select-none">
-                    <span class="opacity-20 text-xs font-mono">SYS</span>
-                </button>
-            `).join('');
-        }
+                let popped = false;
+                bubble.onclick = () => {
+                    popped = true;
+                    score++;
+                    setHud(`Popped: ${score} | Missed: ${misses}/5`);
+                    bubble.remove();
+                };
 
-        function startBugGame() {
-            stopAllMiniGames();
-            bugScore = 0;
-            bugTimeLeft = 15;
-            bugGameActive = true;
-            document.getElementById('bugScore').textContent = bugScore;
-            document.getElementById('bugTimer').textContent = `${bugTimeLeft}s`;
-            document.getElementById('startBugBtn').textContent = '🔥 Squashing in progress...';
-            initBugGrid();
+                arena.appendChild(bubble);
 
-            spawnBug();
-            bugSpawnInterval = setInterval(spawnBug, 650);
-
-            bugTimerInterval = setInterval(() => {
-                bugTimeLeft--;
-                document.getElementById('bugTimer').textContent = `${bugTimeLeft}s`;
-                if (bugTimeLeft <= 0) {
-                    stopAllMiniGames();
-                    initBugGrid();
-                    document.getElementById('startBugBtn').textContent = `🔄 Play Again (Score: ${bugScore})`;
-                    showToast(`🐛 You squashed ${bugScore} production bugs!`);
-                }
-            }, 1000);
-        }
-
-        function spawnBug() {
-            if (!bugGameActive) return;
-            if (activeBugIndex !== -1) {
-                const prev = document.getElementById(`bugCell-${activeBugIndex}`);
-                if (prev) prev.innerHTML = '<span class="opacity-20 text-xs font-mono">SYS</span>';
-            }
-            activeBugIndex = Math.floor(Math.random() * 9);
-            const cell = document.getElementById(`bugCell-${activeBugIndex}`);
-            const icons = ['🐛', '🔥', '💀', '👾'];
-            const icon = icons[Math.floor(Math.random() * icons.length)];
-            if (cell) cell.innerHTML = `<span class="animate-bounce">${icon}</span>`;
-        }
-
-        function whackBug(index) {
-            if (!bugGameActive || index !== activeBugIndex) return;
-            bugScore++;
-            document.getElementById('bugScore').textContent = bugScore;
-            playClickSound();
-            const cell = document.getElementById(`bugCell-${index}`);
-            if (cell) cell.innerHTML = '💥';
-            activeBugIndex = -1;
-        }
-
-        // --- MINI-GAME 2: DEFUSE THE CRISIS ---
-        let defuseRunning = false;
-        let defusePos = 0;
-        let defuseDir = 1;
-        let defuseSpeed = 1.6;
-        let defuseStreak = 0;
-        let defuseBest = 0;
-        let safeStart = 38;
-        let safeWidth = 24;
-        let defuseAnimFrame = null;
-
-        function handleDefuseAction() {
-            const btn = document.getElementById('defuseActionBtn');
-            const status = document.getElementById('defuseStatus');
-
-            if (!defuseRunning) {
-                // Start moving needle
-                defuseRunning = true;
-                defusePos = 0;
-                defuseDir = 1;
-                safeWidth = Math.max(12, 26 - defuseStreak * 2);
-                safeStart = Math.floor(15 + Math.random() * (70 - safeWidth));
-                const safeZone = document.getElementById('defuseSafeZone');
-                safeZone.style.left = `${safeStart}%`;
-                safeZone.style.width = `${safeWidth}%`;
-
-                btn.textContent = '🛑 STOP NEEDLE NOW!';
-                btn.className = 'w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider transition cursor-pointer';
-                status.textContent = 'Wait for the green zone...';
-                status.className = 'text-center font-mono text-xs text-yellow-400 h-4 mb-3';
-                animateDefuse();
-            } else {
-                // Check hit
-                defuseRunning = false;
-                cancelAnimationFrame(defuseAnimFrame);
-                const hit = defusePos >= safeStart && defusePos <= (safeStart + safeWidth);
-
-                if (hit) {
-                    playClickSound();
-                    defuseStreak++;
-                    if (defuseStreak > defuseBest) defuseBest = defuseStreak;
-                    defuseSpeed = Math.min(4.5, 1.6 + defuseStreak * 0.35);
-                    document.getElementById('defuseStreak').textContent = defuseStreak;
-                    document.getElementById('defuseBest').textContent = defuseBest;
-                    status.textContent = '✅ Crisis Averted! Speed increasing...';
-                    status.className = 'text-center font-mono text-xs text-emerald-400 h-4 mb-3';
-                    btn.textContent = '⚡ Next Level';
-                } else {
-                    playAlarmSound();
-                    defuseStreak = 0;
-                    defuseSpeed = 1.6;
-                    document.getElementById('defuseStreak').textContent = 0;
-                    status.textContent = '💥 Server Exploded! Missed the zone.';
-                    status.className = 'text-center font-mono text-xs text-red-400 h-4 mb-3';
-                    btn.textContent = '🔄 Try Again';
-                }
-                btn.className = 'w-full py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs uppercase tracking-wider transition cursor-pointer';
-            }
-        }
-
-        function animateDefuse() {
-            if (!defuseRunning) return;
-            defusePos += defuseDir * defuseSpeed;
-            if (defusePos >= 98) {
-                defusePos = 98;
-                defuseDir = -1;
-            } else if (defusePos <= 0) {
-                defusePos = 0;
-                defuseDir = 1;
-            }
-            document.getElementById('defuseCursor').style.left = `${defusePos}%`;
-            defuseAnimFrame = requestAnimationFrame(animateDefuse);
-        }
-
-        // --- MINI-GAME 3: EXCUSE TYPER ---
-        const typerPhrases = [
-            "my wifi just died",
-            "per my last email",
-            "it works on my machine",
-            "my cat stepped on esc",
-            "stuck in bad traffic",
-            "forgot to hit save",
-            "blame the dns cache",
-            "running five mins late"
-        ];
-        let typerScore = 0, typerTime = 20, typerActive = false, typerTimerInterval = null, currentPhrase = "";
-
-        function startTyperGame() {
-            stopAllMiniGames();
-            typerScore = 0;
-            typerTime = 20;
-            typerActive = true;
-            document.getElementById('typerScore').textContent = 0;
-            document.getElementById('typerTimer').textContent = '20s';
-            const input = document.getElementById('typerInput');
-            input.disabled = false;
-            input.value = '';
-            input.focus();
-            document.getElementById('startTyperBtn').textContent = '⌨️ Type fast!';
-            nextTyperPhrase();
-
-            typerTimerInterval = setInterval(() => {
-                typerTime--;
-                document.getElementById('typerTimer').textContent = `${typerTime}s`;
-                if (typerTime <= 0) {
-                    stopAllMiniGames();
-                    input.disabled = true;
-                    document.getElementById('typerTarget').textContent = `Time's Up! Sent ${typerScore} excuses.`;
-                    document.getElementById('startTyperBtn').textContent = '🔄 Play Again';
-                }
-            }, 1000);
-        }
-
-        function nextTyperPhrase() {
-            currentPhrase = typerPhrases[Math.floor(Math.random() * typerPhrases.length)];
-            document.getElementById('typerTarget').textContent = currentPhrase;
-            document.getElementById('typerInput').value = '';
-        }
-
-        function checkTyperInput() {
-            if (!typerActive) return;
-            const val = document.getElementById('typerInput').value.trim().toLowerCase();
-            if (val === currentPhrase) {
-                playClickSound();
-                typerScore++;
-                document.getElementById('typerScore').textContent = typerScore;
-                nextTyperPhrase();
-            }
-        }
-
-        // --- MINI-GAME 4: PANIC MEMORY ---
-        const memIcons = ['🆘', '🔥', '🧻', '💻', '☕', '🐛'];
-        let memCards = [], memFlipped = [], memMatched = 0, memMoves = 0, memLock = false;
-
-        function initMemoryGame() {
-            memFlipped = [];
-            memMatched = 0;
-            memMoves = 0;
-            memLock = false;
-            document.getElementById('memPairs').textContent = '0/6';
-            document.getElementById('memMoves').textContent = '0';
-            memCards = [...memIcons, ...memIcons].sort(() => Math.random() - 0.5);
-            const grid = document.getElementById('memoryGrid');
-            grid.innerHTML = memCards.map((_, i) => `
-                <button onclick="flipMemCard(${i})" id="memCard-${i}" class="h-12 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-600 text-lg flex items-center justify-center cursor-pointer transition">
-                    ❓
-                </button>
-            `).join('');
-        }
-
-        function flipMemCard(idx) {
-            if (memLock || memFlipped.includes(idx)) return;
-            const btn = document.getElementById(`memCard-${idx}`);
-            if (btn.dataset.matched === 'true') return;
-            playClickSound();
-            btn.textContent = memCards[idx];
-            btn.classList.add('bg-zinc-800', 'border-red-500/50');
-            memFlipped.push(idx);
-
-            if (memFlipped.length === 2) {
-                memMoves++;
-                document.getElementById('memMoves').textContent = memMoves;
-                const [a, b] = memFlipped;
-                if (memCards[a] === memCards[b]) {
-                    document.getElementById(`memCard-${a}`).dataset.matched = 'true';
-                    document.getElementById(`memCard-${b}`).dataset.matched = 'true';
-                    memMatched++;
-                    document.getElementById('memPairs').textContent = `${memMatched}/6`;
-                    memFlipped = [];
-                    if (memMatched === 6) showToast(`🧠 Crisis Memory Cleared in ${memMoves} moves!`);
-                } else {
-                    memLock = true;
-                    setTimeout(() => {
-                        [a, b].forEach(i => {
-                            const c = document.getElementById(`memCard-${i}`);
-                            c.textContent = '❓';
-                            c.classList.remove('bg-zinc-800', 'border-red-500/50');
-                        });
-                        memFlipped = [];
-                        memLock = false;
-                    }, 600);
-                }
-            }
-        }
-
-        // --- MINI-GAME 5: BLAME THE BOSS (RPS) ---
-        let rpsYou = 0, rpsBot = 0;
-        function playRps(choice) {
-            playClickSound();
-            const opts = ['dns', 'wifi', 'intern'];
-            const labels = { dns: 'Blame DNS 🌐', wifi: 'Bad Wi-Fi 📶', intern: 'The Intern 🧑‍🎓' };
-            const bot = opts[Math.floor(Math.random() * 3)];
-            const res = document.getElementById('rpsResult');
-
-            if (choice === bot) {
-                res.textContent = `Tie! Both picked ${labels[bot]}. Awkward silence...`;
-            } else if (
-                (choice === 'dns' && bot === 'intern') ||
-                (choice === 'wifi' && bot === 'dns') ||
-                (choice === 'intern' && bot === 'wifi')
-            ) {
-                rpsYou++;
-                document.getElementById('rpsYou').textContent = rpsYou;
-                res.textContent = `✅ You won! ${labels[choice]} beats ${labels[bot]}!`;
-            } else {
-                rpsBot++;
-                document.getElementById('rpsBot').textContent = rpsBot;
-                res.textContent = `❌ Boss won! ${labels[bot]} beats ${labels[choice]}!`;
-            }
-        }
-
-        // --- MINI-GAME 6: SERVER SIMON SAYS ---
-        let simonSeq = [], simonUser = [], simonPlaying = false;
-        function startSimonGame() {
-            simonSeq = [];
-            simonUser = [];
-            document.getElementById('simonRound').textContent = '0';
-            nextSimonRound();
-        }
-
-        function nextSimonRound() {
-            simonUser = [];
-            simonPlaying = false;
-            simonSeq.push(Math.floor(Math.random() * 4));
-            document.getElementById('simonRound').textContent = simonSeq.length;
-            document.getElementById('simonStatus').textContent = 'Watch sequence...';
-            simonSeq.forEach((val, idx) => {
                 setTimeout(() => {
-                    flashSimonBtn(val);
-                    if (idx === simonSeq.length - 1) {
-                        setTimeout(() => {
-                            simonPlaying = true;
-                            document.getElementById('simonStatus').textContent = 'Your turn!';
-                        }, 350);
+                    if (!popped && bubble.parentElement) {
+                        bubble.remove();
+                        misses++;
+                        setHud(`Popped: ${score} | Missed: ${misses}/5`);
+                        if (misses >= 5) {
+                            arena.innerHTML = `<div class="h-full flex flex-col items-center justify-center p-4 text-center"><div class="text-xl font-black text-rose-400">5 Bubbles Escaped!</div><div class="text-xs font-mono text-zinc-400 mt-1">Final Score: ${score}. Still think you don't need practice?</div></div>`;
+                        }
                     }
-                }, (idx + 1) * 550);
-            });
+                }, 1500);
+            }, 680);
+
+            return () => clearInterval(spawnInterval);
         }
 
-        function flashSimonBtn(i) {
-            playClickSound();
-            const btn = document.getElementById(`simonBtn${i}`);
-            btn.classList.add('brightness-200', 'scale-95');
-            setTimeout(() => btn.classList.remove('brightness-200', 'scale-95'), 250);
-        }
+        /* -------------------------------------------------------------------------
+           GAME 2: REACTION FLATLINE
+        ------------------------------------------------------------------------- */
+        function runGame2Reaction(mount) {
+            let state = 'waiting'; // waiting | ready | result
+            let startTime = 0;
+            setHud('Best: Solo Pro');
 
-        function pressSimon(i) {
-            if (!simonPlaying) return;
-            flashSimonBtn(i);
-            simonUser.push(i);
-            const step = simonUser.length - 1;
-            if (simonUser[step] !== simonSeq[step]) {
-                playAlarmSound();
-                simonPlaying = false;
-                document.getElementById('simonStatus').textContent = `💥 Crashed at Round ${simonSeq.length}!`;
-                return;
-            }
-            if (simonUser.length === simonSeq.length) {
-                simonPlaying = false;
-                document.getElementById('simonStatus').textContent = '✅ Nice! Next...';
-                setTimeout(nextSimonRound, 600);
-            }
-        }
+            const pad = document.createElement('button');
+            pad.className = 'w-full h-72 rounded-2xl bg-rose-500/20 border-2 border-rose-500/50 flex flex-col items-center justify-center gap-2 transition cursor-pointer p-4';
+            pad.innerHTML = `<span class="text-2xl font-black text-rose-400">WAIT FOR GREEN...</span><span class="text-xs font-mono text-zinc-400">Don't jump the gun.</span>`;
+            mount.appendChild(pad);
 
-        // --- MINI-GAME 7: COFFEE REFLEX TEST ---
-        let reflexState = 'idle', reflexStart = 0, reflexTimeout = null, reflexBest = null;
-        function handleReflexClick() {
-            const box = document.getElementById('reflexBox');
-            const text = document.getElementById('reflexText');
-            const sub = document.getElementById('reflexSub');
+            const timer = setTimeout(() => {
+                if (state !== 'waiting') return;
+                state = 'ready';
+                startTime = performance.now();
+                pad.className = 'w-full h-72 rounded-2xl bg-emerald-500 text-zinc-950 flex flex-col items-center justify-center gap-2 transition cursor-pointer p-4';
+                pad.innerHTML = `<span class="text-3xl font-black">CLICK NOW!</span><span class="text-xs font-mono font-bold">Prove your reflexes.</span>`;
+            }, 1200 + Math.random() * 2200);
 
-            if (reflexState === 'idle' || reflexState === 'done') {
-                reflexState = 'waiting';
-                box.className = 'w-full h-28 rounded-xl bg-red-950/60 border-2 border-red-500 flex flex-col items-center justify-center cursor-pointer transition select-none';
-                text.textContent = 'WAIT FOR GREEN...';
-                sub.textContent = 'Do not panic click early!';
-                reflexTimeout = setTimeout(() => {
-                    reflexState = 'ready';
-                    reflexStart = performance.now();
-                    box.className = 'w-full h-28 rounded-xl bg-emerald-600 border-2 border-emerald-300 flex flex-col items-center justify-center cursor-pointer transition select-none';
-                    text.textContent = 'DRINK COFFEE NOW! (TAP!)';
-                    sub.textContent = 'GO GO GO!';
-                }, 1200 + Math.random() * 2500);
-            } else if (reflexState === 'waiting') {
-                clearTimeout(reflexTimeout);
-                reflexState = 'done';
-                playAlarmSound();
-                box.className = 'w-full h-28 rounded-xl bg-zinc-900 border-2 border-yellow-500 flex flex-col items-center justify-center cursor-pointer transition select-none';
-                text.textContent = '⚠️ Spilled Coffee! Too Early!';
-                sub.textContent = 'Click to try again';
-            } else if (reflexState === 'ready') {
-                const ms = Math.round(performance.now() - reflexStart);
-                reflexState = 'done';
-                playClickSound();
-                document.getElementById('reflexLast').textContent = `${ms} ms`;
-                if (!reflexBest || ms < reflexBest) {
-                    reflexBest = ms;
-                    document.getElementById('reflexBest').textContent = `${ms} ms`;
+            pad.onclick = () => {
+                if (state === 'waiting') {
+                    state = 'result';
+                    clearTimeout(timer);
+                    pad.className = 'w-full h-72 rounded-2xl bg-amber-400/15 border-2 border-amber-400 flex flex-col items-center justify-center gap-2 p-4';
+                    pad.innerHTML = `<span class="text-2xl font-black text-amber-400">TOO EARLY!</span><span class="text-xs font-mono text-zinc-300">Patience isn't your strong suit. Hit Restart.</span>`;
+                } else if (state === 'ready') {
+                    const ms = Math.round(performance.now() - startTime);
+                    state = 'result';
+                    setHud(`Reaction: ${ms} ms`);
+                    pad.className = 'w-full h-72 rounded-2xl bg-sky-500/15 border-2 border-sky-400 flex flex-col items-center justify-center gap-2 p-4';
+                    pad.innerHTML = `<span class="text-4xl font-black text-sky-400">${ms} ms</span><span class="text-xs font-mono text-zinc-300">${ms < 240 ? 'Suspiciously fast. Show-off.' : 'Decent. Hit Restart to try again.'}</span>`;
                 }
-                box.className = 'w-full h-28 rounded-xl bg-zinc-900 border-2 border-emerald-500 flex flex-col items-center justify-center cursor-pointer transition select-none';
-                text.textContent = `⚡ ${ms} ms Reaction!`;
-                sub.textContent = 'Click to test again';
-            }
+            };
+
+            return () => clearTimeout(timer);
         }
 
-        // --- MINI-GAME 8: TAX PANIC MATH ---
-        let mathScore = 0, mathTime = 15, mathActive = false, mathAnswer = 0, mathTimerInterval = null;
-        function startMathGame() {
-            stopAllMiniGames();
-            mathScore = 0;
-            mathTime = 15;
-            mathActive = true;
-            document.getElementById('mathScore').textContent = 0;
-            document.getElementById('mathTimer').textContent = '15s';
-            document.getElementById('startMathBtn').textContent = '🧾 Auditing...';
-            nextMathQuestion();
+        /* -------------------------------------------------------------------------
+           GAME 3: ORBIT DODGER (CANVAS)
+        ------------------------------------------------------------------------- */
+        function runGame3OrbitDodger(mount) {
+            const canvas = document.createElement('canvas');
+            canvas.className = 'game-surface bg-zinc-950 rounded-2xl border border-zinc-800';
+            const wrap = document.createElement('div');
+            wrap.className = 'w-full h-72';
+            wrap.appendChild(canvas);
+            mount.appendChild(wrap);
 
-            mathTimerInterval = setInterval(() => {
-                mathTime--;
-                document.getElementById('mathTimer').textContent = `${mathTime}s`;
-                if (mathTime <= 0) {
-                    stopAllMiniGames();
-                    document.getElementById('mathQuestion').textContent = `Audit Done! Score: ${mathScore}`;
-                    document.getElementById('startMathBtn').textContent = '🔄 Audit Again';
+            const ctx = canvas.getContext('2d');
+            canvas.width = wrap.clientWidth || 500;
+            canvas.height = 288;
+
+            let player = { x: canvas.width / 2, y: canvas.height / 2 };
+            let comets = Array.from({ length: 7 }, (_, i) => ({
+                angle: (i / 7) * Math.PI * 2,
+                radius: 45 + (i % 4) * 26,
+                speed: (i % 2 === 0 ? 1 : -1) * (0.02 + (i % 3) * 0.008)
+            }));
+            let alive = true;
+            let ticks = 0;
+            let rafId;
+
+            const moveHandler = (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                player.x = clientX - rect.left;
+                player.y = clientY - rect.top;
+            };
+
+            canvas.addEventListener('pointermove', moveHandler);
+            canvas.addEventListener('touchmove', moveHandler, { passive: true });
+
+            function loop() {
+                if (!alive) return;
+                ticks++;
+                if (ticks % 10 === 0) setHud(`Survived: ${(ticks / 60).toFixed(1)}s`);
+
+                ctx.fillStyle = 'rgba(9, 9, 11, 0.35)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                const cx = canvas.width / 2;
+                const cy = canvas.height / 2;
+
+                // Core
+                ctx.fillStyle = '#27272a';
+                ctx.beginPath();
+                ctx.arc(cx, cy, 12, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Comets
+                for (const c of comets) {
+                    c.angle += c.speed;
+                    const x = cx + Math.cos(c.angle) * c.radius;
+                    const y = cy + Math.sin(c.angle) * c.radius;
+                    ctx.fillStyle = '#f43f5e';
+                    ctx.beginPath();
+                    ctx.arc(x, y, 8, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    if (Math.hypot(x - player.x, y - player.y) < 16) {
+                        alive = false;
+                        ctx.fillStyle = 'rgba(9,9,11,0.85)';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        ctx.fillStyle = '#fbbf24';
+                        ctx.font = 'bold 20px Inter, sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.fillText(`Bonked at ${(ticks / 60).toFixed(1)}s!`, cx, cy - 6);
+                        ctx.fillStyle = '#a1a1aa';
+                        ctx.font = '12px JetBrains Mono, monospace';
+                        ctx.fillText('Click Restart Game to pretend that didn’t happen.', cx, cy + 18);
+                        return;
+                    }
+                }
+
+                // Player
+                ctx.fillStyle = '#38bdf8';
+                ctx.beginPath();
+                ctx.arc(player.x, player.y, 9, 0, Math.PI * 2);
+                ctx.fill();
+
+                rafId = requestAnimationFrame(loop);
+            }
+            rafId = requestAnimationFrame(loop);
+
+            return () => {
+                alive = false;
+                cancelAnimationFrame(rafId);
+                canvas.removeEventListener('pointermove', moveHandler);
+            };
+        }
+
+        /* -------------------------------------------------------------------------
+           GAME 4: MATH SPEEDRUN
+        ------------------------------------------------------------------------- */
+        function runGame4MathSpeedrun(mount) {
+            let score = 0;
+            let timeLeft = 15;
+            let currentAns = 0;
+            setHud(`Score: 0 | Time: ${timeLeft}s`);
+
+            const box = document.createElement('div');
+            box.className = 'w-full h-72 bg-zinc-950 rounded-2xl border border-zinc-800 flex flex-col items-center justify-center gap-4 p-4';
+            mount.appendChild(box);
+
+            function nextQuestion() {
+                const a = Math.floor(Math.random() * 15) + 2;
+                const b = Math.floor(Math.random() * 12) + 2;
+                const mul = Math.random() > 0.5;
+                currentAns = mul ? a * b : a + b;
+                const qText = mul ? `${a} × ${b} = ?` : `${a} + ${b} = ?`;
+
+                const opts = new Set([currentAns]);
+                while (opts.size < 4) {
+                    opts.add(currentAns + Math.floor(Math.random() * 11) - 5);
+                }
+
+                box.innerHTML = `
+                    <div class="text-3xl font-black font-mono text-white">${qText}</div>
+                    <div class="grid grid-cols-2 gap-3 w-full max-w-xs" id="math-opts"></div>
+                `;
+                const grid = box.querySelector('#math-opts');
+                [...opts].sort(() => Math.random() - 0.5).forEach(val => {
+                    const btn = document.createElement('button');
+                    btn.className = 'py-3 rounded-xl bg-zinc-900 hover:bg-sky-500 hover:text-zinc-950 border border-zinc-700 font-mono font-bold text-base transition cursor-pointer';
+                    btn.textContent = val;
+                    btn.onclick = () => {
+                        if (timeLeft <= 0) return;
+                        if (val === currentAns) {
+                            score++;
+                        } else {
+                            score = Math.max(0, score - 1);
+                        }
+                        setHud(`Score: ${score} | Time: ${timeLeft}s`);
+                        nextQuestion();
+                    };
+                    grid.appendChild(btn);
+                });
+            }
+
+            nextQuestion();
+
+            const interval = setInterval(() => {
+                timeLeft--;
+                setHud(`Score: ${score} | Time: ${timeLeft}s`);
+                if (timeLeft <= 0) {
+                    clearInterval(interval);
+                    box.innerHTML = `<div class="text-2xl font-black text-amber-400">Time's Up! Final Score: ${score}</div><div class="text-xs font-mono text-zinc-400">A calculator wasn't allowed, obviously.</div>`;
                 }
             }, 1000);
+
+            return () => clearInterval(interval);
         }
 
-        function nextMathQuestion() {
-            const a = Math.floor(Math.random() * 15) + 3;
-            const b = Math.floor(Math.random() * 15) + 2;
-            mathAnswer = a + b;
-            document.getElementById('mathQuestion').textContent = `${a} + ${b} = ?`;
-            const choices = new Set([mathAnswer]);
-            while (choices.size < 3) {
-                choices.add(mathAnswer + (Math.floor(Math.random() * 7) - 3) || mathAnswer + 2);
-            }
-            const shuffled = [...choices].sort(() => Math.random() - 0.5);
-            document.getElementById('mathOptions').innerHTML = shuffled.map(num => `
-                <button onclick="checkMathAnswer(${num})" class="py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-white font-mono font-bold text-sm cursor-pointer transition">
-                    ${num}
-                </button>
-            `).join('');
-        }
-
-        function checkMathAnswer(val) {
-            if (!mathActive) return;
-            if (val === mathAnswer) {
-                playClickSound();
-                mathScore++;
-                document.getElementById('mathScore').textContent = mathScore;
-                nextMathQuestion();
-            } else {
-                playAlarmSound();
-                nextMathQuestion();
-            }
-        }
-
-        // --- MINI-GAME 9: CTRL+Z PANIC MASHER ---
-        let masherCount = 0, masherTime = 10.0, masherActive = false, masherInterval = null;
-        function handleMasherClick() {
-            const btn = document.getElementById('masherBtn');
-            if (!masherActive) {
-                stopAllMiniGames();
-                masherCount = 1;
-                masherTime = 10.0;
-                masherActive = true;
-                document.getElementById('masherCount').textContent = 1;
-                btn.textContent = '⏪ MASH CTRL + Z!!';
-                masherInterval = setInterval(() => {
-                    masherTime = Math.max(0, masherTime - 0.1);
-                    document.getElementById('masherTimer').textContent = `${masherTime.toFixed(1)}s`;
-                    if (masherTime <= 0) {
-                        stopAllMiniGames();
-                        btn.textContent = `✅ ${masherCount} UNDOS! (PLAY AGAIN)`;
-                        showToast(`⚡ You mashed Ctrl+Z ${masherCount} times in 10s!`);
-                    }
-                }, 100);
-            } else {
-                masherCount++;
-                document.getElementById('masherCount').textContent = masherCount;
-                if (masherCount % 5 === 0) playClickSound();
-            }
-        }
-
-        // --- MINI-GAME 10: LIFE DECISION ORACLE ---
-        function flipDecisionCoin() {
-            playClickSound();
-            const coin = document.getElementById('coinDisplay');
-            const verdict = document.getElementById('coinVerdict');
-            const answers = [
-                { icon: '✅', text: 'YES! Do it before you overthink!' },
-                { icon: '🛑', text: 'NO! Abort mission immediately!' },
-                { icon: '🍕', text: 'Order food first, decide later.' },
-                { icon: '😴', text: 'Go take a 20-minute nap instead.' },
-                { icon: '💸', text: 'Your wallet says NO, heart says YES.' },
-                { icon: '🏃', text: 'Run away and blame bad Wi-Fi!' }
+        /* -------------------------------------------------------------------------
+           GAME 5: SIMON SAYS CHAOS
+        ------------------------------------------------------------------------- */
+        function runGame5Simon(mount) {
+            const colors = [
+                { name: 'Sky', cls: 'bg-sky-500', active: 'bg-sky-200 scale-105' },
+                { name: 'Amber', cls: 'bg-amber-400', active: 'bg-amber-100 scale-105' },
+                { name: 'Emerald', cls: 'bg-emerald-500', active: 'bg-emerald-200 scale-105' },
+                { name: 'Rose', cls: 'bg-rose-500', active: 'bg-rose-200 scale-105' }
             ];
-            coin.classList.add('animate-spin');
-            verdict.textContent = 'Consulting the universe...';
-            setTimeout(() => {
-                coin.classList.remove('animate-spin');
-                const pick = answers[Math.floor(Math.random() * answers.length)];
-                coin.textContent = pick.icon;
-                verdict.textContent = pick.text;
-            }, 450);
+            let seq = [];
+            let userIdx = 0;
+            let locked = true;
+            let timeouts = [];
+
+            const wrap = document.createElement('div');
+            wrap.className = 'w-full h-72 bg-zinc-950 rounded-2xl border border-zinc-800 flex flex-col items-center justify-center gap-4 p-4';
+            const status = document.createElement('div');
+            status.className = 'text-xs font-mono font-bold text-zinc-300';
+            const padsWrap = document.createElement('div');
+            padsWrap.className = 'grid grid-cols-2 gap-3 w-52 h-44';
+            wrap.appendChild(status);
+            wrap.appendChild(padsWrap);
+            mount.appendChild(wrap);
+
+            const btns = colors.map((c, idx) => {
+                const b = document.createElement('button');
+                b.className = `${c.cls} rounded-2xl transition-transform cursor-pointer opacity-85 hover:opacity-100`;
+                b.onclick = () => {
+                    if (locked) return;
+                    if (idx === seq[userIdx]) {
+                        userIdx++;
+                        if (userIdx === seq.length) {
+                            setHud(`Round ${seq.length} Cleared`);
+                            nextRound();
+                        }
+                    } else {
+                        locked = true;
+                        status.textContent = `Wrong pad! Made it to Round ${seq.length}.`;
+                        status.className = 'text-xs font-mono font-bold text-rose-400';
+                    }
+                };
+                padsWrap.appendChild(b);
+                return b;
+            });
+
+            function nextRound() {
+                locked = true;
+                userIdx = 0;
+                seq.push(Math.floor(Math.random() * 4));
+                setHud(`Round ${seq.length}`);
+                status.textContent = 'Watch carefully...';
+
+                seq.forEach((padIndex, i) => {
+                    const t1 = setTimeout(() => {
+                        btns[padIndex].classList.add('ring-4', 'ring-white', 'scale-105');
+                    }, (i + 1) * 550);
+                    const t2 = setTimeout(() => {
+                        btns[padIndex].classList.remove('ring-4', 'ring-white', 'scale-105');
+                        if (i === seq.length - 1) {
+                            locked = false;
+                            status.textContent = 'Your turn! Repeat the sequence.';
+                        }
+                    }, (i + 1) * 550 + 300);
+                    timeouts.push(t1, t2);
+                });
+            }
+
+            nextRound();
+            return () => timeouts.forEach(clearTimeout);
         }
+
+        /* -------------------------------------------------------------------------
+           GAME 6: PRECISION STOPPER
+        ------------------------------------------------------------------------- */
+        function runGame6PrecisionStopper(mount) {
+            let pos = 0;
+            let dir = 1;
+            let running = true;
+            let score = 0;
+            setHud('Bullseyes: 0');
+
+            const wrap = document.createElement('div');
+            wrap.className = 'w-full h-72 bg-zinc-950 rounded-2xl border border-zinc-800 flex flex-col items-center justify-center gap-6 p-6';
+            wrap.innerHTML = `
+                <div class="w-full max-w-md h-10 bg-zinc-900 rounded-full border border-zinc-700 relative overflow-hidden">
+                    <div class="absolute top-0 bottom-0 left-[42%] w-[16%] bg-emerald-500/35 border-x border-emerald-400"></div>
+                    <div id="stopper-needle" class="absolute top-0 bottom-0 w-1.5 bg-amber-400 shadow-md" style="left: 0%"></div>
+                </div>
+                <button id="stop-btn" class="px-7 py-3 rounded-2xl bg-sky-500 hover:bg-sky-400 text-zinc-950 font-black text-sm cursor-pointer">
+                    STOP IN THE GREEN ZONE
+                </button>
+                <div id="stop-msg" class="text-xs font-mono text-zinc-400">Timing is everything.</div>
+            `;
+            mount.appendChild(wrap);
+
+            const needle = wrap.querySelector('#stopper-needle');
+            const stopBtn = wrap.querySelector('#stop-btn');
+            const msg = wrap.querySelector('#stop-msg');
+
+            const anim = setInterval(() => {
+                if (!running) return;
+                pos += dir * 2.2;
+                if (pos >= 98) { pos = 98; dir = -1; }
+                if (pos <= 0) { pos = 0; dir = 1; }
+                needle.style.left = pos + '%';
+            }, 16);
+
+            stopBtn.onclick = () => {
+                if (!running) {
+                    running = true;
+                    stopBtn.textContent = 'STOP IN THE GREEN ZONE';
+                    return;
+                }
+                running = false;
+                if (pos >= 42 && pos <= 58) {
+                    score++;
+                    setHud(`Bullseyes: ${score}`);
+                    msg.textContent = 'Spot on! Click button to go again.';
+                    msg.className = 'text-xs font-mono text-emerald-400 font-bold';
+                } else {
+                    msg.textContent = `Missed (${pos.toFixed(0)}%). Click button to try again.`;
+                    msg.className = 'text-xs font-mono text-rose-400 font-bold';
+                }
+                stopBtn.textContent = 'CONTINUE SLIDING';
+            };
+
+            return () => clearInterval(anim);
+        }
+
+        /* -------------------------------------------------------------------------
+           GAME 7: COLOR STROOP TRICK
+        ------------------------------------------------------------------------- */
+        function runGame7Stroop(mount) {
+            const palette = [
+                { label: 'RED', color: '#f43f5e' },
+                { label: 'BLUE', color: '#38bdf8' },
+                { label: 'GREEN', color: '#34d399' },
+                { label: 'YELLOW', color: '#fbbf24' }
+            ];
+            let score = 0;
+            let targetColor = palette[0];
+            setHud('Score: 0');
+
+            const wrap = document.createElement('div');
+            wrap.className = 'w-full h-72 bg-zinc-950 rounded-2xl border border-zinc-800 flex flex-col items-center justify-center gap-5 p-4';
+            mount.appendChild(wrap);
+
+            function drawRound() {
+                const wordObj = palette[Math.floor(Math.random() * palette.length)];
+                targetColor = palette[Math.floor(Math.random() * palette.length)];
+
+                wrap.innerHTML = `
+                    <div class="text-xs font-mono text-zinc-400">Click the <span class="text-white font-bold underline">INK COLOR</span>, not the word:</div>
+                    <div class="text-4xl font-black tracking-wider" style="color: ${targetColor.color}">${wordObj.label}</div>
+                    <div class="flex flex-wrap justify-center gap-2.5" id="stroop-btns"></div>
+                `;
+                const row = wrap.querySelector('#stroop-btns');
+                palette.forEach(p => {
+                    const b = document.createElement('button');
+                    b.className = 'px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 font-mono font-bold text-xs text-white cursor-pointer';
+                    b.textContent = p.label;
+                    b.onclick = () => {
+                        if (p.label === targetColor.label) {
+                            score++;
+                        } else {
+                            score = Math.max(0, score - 1);
+                        }
+                        setHud(`Score: ${score}`);
+                        drawRound();
+                    };
+                    row.appendChild(b);
+                });
+            }
+
+            drawRound();
+            return null;
+        }
+
+        /* -------------------------------------------------------------------------
+           GAME 8: METEOR CATCHER (CANVAS)
+        ------------------------------------------------------------------------- */
+        function runGame8MeteorCatcher(mount) {
+            const wrap = document.createElement('div');
+            wrap.className = 'w-full h-72';
+            const canvas = document.createElement('canvas');
+            canvas.className = 'game-surface bg-zinc-950 rounded-2xl border border-zinc-800';
+            wrap.appendChild(canvas);
+            mount.appendChild(wrap);
+
+            const ctx = canvas.getContext('2d');
+            canvas.width = wrap.clientWidth || 500;
+            canvas.height = 288;
+
+            let basketX = canvas.width / 2 - 35;
+            let items = [];
+            let score = 0;
+            let gameOver = false;
+            let frame = 0;
+            let rafId;
+            setHud('Stars: 0');
+
+            const pointerMove = (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+                basketX = Math.max(0, Math.min(canvas.width - 70, x - 35));
+            };
+            canvas.addEventListener('pointermove', pointerMove);
+            canvas.addEventListener('touchmove', pointerMove, { passive: true });
+
+            function step() {
+                if (gameOver) return;
+                frame++;
+                if (frame % 36 === 0) {
+                    items.push({
+                        x: 20 + Math.random() * (canvas.width - 40),
+                        y: -10,
+                        speed: 2.4 + Math.random() * 1.8,
+                        isBomb: Math.random() < 0.28
+                    });
+                }
+
+                ctx.fillStyle = '#09090b';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Basket
+                ctx.fillStyle = '#38bdf8';
+                ctx.fillRect(basketX, canvas.height - 24, 70, 12);
+
+                for (let i = items.length - 1; i >= 0; i--) {
+                    const it = items[i];
+                    it.y += it.speed;
+
+                    ctx.fillStyle = it.isBomb ? '#f43f5e' : '#fbbf24';
+                    ctx.beginPath();
+                    ctx.arc(it.x, it.y, 9, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Catch check
+                    if (it.y >= canvas.height - 26 && it.y <= canvas.height - 10 && it.x >= basketX && it.x <= basketX + 70) {
+                        items.splice(i, 1);
+                        if (it.isBomb) {
+                            gameOver = true;
+                            ctx.fillStyle = 'rgba(9,9,11,0.85)';
+                            ctx.fillRect(0, 0, canvas.width, canvas.height);
+                            ctx.fillStyle = '#f43f5e';
+                            ctx.font = 'bold 20px Inter, sans-serif';
+                            ctx.textAlign = 'center';
+                            ctx.fillText(`Caught a Bomb! Final Stars: ${score}`, canvas.width / 2, canvas.height / 2);
+                            return;
+                        } else {
+                            score++;
+                            setHud(`Stars: ${score}`);
+                        }
+                    } else if (it.y > canvas.height + 20) {
+                        items.splice(i, 1);
+                    }
+                }
+
+                rafId = requestAnimationFrame(step);
+            }
+            rafId = requestAnimationFrame(step);
+
+            return () => {
+                gameOver = true;
+                cancelAnimationFrame(rafId);
+                canvas.removeEventListener('pointermove', pointerMove);
+            };
+        }
+
+        /* -------------------------------------------------------------------------
+           GAME 9: CODEBREAKER LOCKS (3-DIGIT GUESSER)
+        ------------------------------------------------------------------------- */
+        function runGame9Codebreaker(mount) {
+            const secret = Math.floor(100 + Math.random() * 900);
+            let tries = 0;
+            setHud('Attempts: 0');
+
+            const wrap = document.createElement('div');
+            wrap.className = 'w-full h-72 bg-zinc-950 rounded-2xl border border-zinc-800 flex flex-col items-center justify-center gap-4 p-4 text-center';
+            wrap.innerHTML = `
+                <div class="text-xs font-mono text-zinc-400">Crack the 3-digit vault code (100–999) on your own:</div>
+                <div class="flex gap-2">
+                    <input id="lock-guess" type="number" min="100" max="999" placeholder="500" class="w-28 bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 font-mono text-center text-white font-bold outline-none focus:border-amber-400">
+                    <button id="lock-btn" class="px-5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-zinc-950 font-black text-sm cursor-pointer">TRY</button>
+                </div>
+                <div id="lock-clue" class="text-sm font-mono font-bold text-sky-400 min-h-[24px]">Enter a 3-digit number.</div>
+            `;
+            mount.appendChild(wrap);
+
+            const input = wrap.querySelector('#lock-guess');
+            const btn = wrap.querySelector('#lock-btn');
+            const clue = wrap.querySelector('#lock-clue');
+
+            btn.onclick = () => {
+                const val = parseInt(input.value, 10);
+                if (isNaN(val) || val < 100 || val > 999) {
+                    clue.textContent = 'Needs to be a 3-digit number (100–999).';
+                    clue.className = 'text-sm font-mono font-bold text-rose-400';
+                    return;
+                }
+                tries++;
+                setHud(`Attempts: ${tries}`);
+                if (val === secret) {
+                    clue.textContent = `UNLOCKED (${secret}) in ${tries} tries! Pure solo genius.`;
+                    clue.className = 'text-sm font-mono font-bold text-emerald-400';
+                } else if (val < secret) {
+                    clue.textContent = `${val} is TOO LOW. Aim higher.`;
+                    clue.className = 'text-sm font-mono font-bold text-sky-400';
+                } else {
+                    clue.textContent = `${val} is TOO HIGH. Aim lower.`;
+                    clue.className = 'text-sm font-mono font-bold text-amber-400';
+                }
+            };
+
+            return null;
+        }
+
+        /* -------------------------------------------------------------------------
+           GAME 10: CLICK STORM 5S
+        ------------------------------------------------------------------------- */
+        function runGame10ClickStorm(mount) {
+            let clicks = 0;
+            let active = true;
+            let timeLeft = 5.0;
+            setHud('Clicks: 0 | 5.0s');
+
+            const wrap = document.createElement('div');
+            wrap.className = 'w-full h-72 bg-zinc-950 rounded-2xl border border-zinc-800 flex flex-col items-center justify-center gap-4 p-4';
+            const btn = document.createElement('button');
+            btn.className = 'px-8 py-5 rounded-3xl bg-amber-400 hover:bg-amber-300 active:scale-95 text-zinc-950 font-black text-xl shadow-lg cursor-pointer transition-transform';
+            btn.textContent = 'MASH ME!';
+            const info = document.createElement('div');
+            info.className = 'text-xs font-mono text-zinc-400';
+            info.textContent = '5 seconds starts on your first click.';
+            wrap.appendChild(btn);
+            wrap.appendChild(info);
+            mount.appendChild(wrap);
+
+            let started = false;
+            let timerId = null;
+
+            btn.onclick = () => {
+                if (!active) return;
+                if (!started) {
+                    started = true;
+                    const t0 = performance.now();
+                    timerId = setInterval(() => {
+                        const elapsed = (performance.now() - t0) / 1000;
+                        timeLeft = Math.max(0, 5 - elapsed);
+                        setHud(`Clicks: ${clicks} | ${timeLeft.toFixed(1)}s`);
+                        if (timeLeft <= 0) {
+                            clearInterval(timerId);
+                            active = false;
+                            btn.disabled = true;
+                            const cps = (clicks / 5).toFixed(1);
+                            info.textContent = `Done! ${clicks} clicks (${cps} clicks/sec). Your index finger didn't ask for help either.`;
+                            info.className = 'text-xs font-mono font-bold text-emerald-400';
+                        }
+                    }, 100);
+                }
+                clicks++;
+                setHud(`Clicks: ${clicks} | ${timeLeft.toFixed(1)}s`);
+            };
+
+            return () => clearInterval(timerId);
+        }
+
+        // Initialize icons & game picker on load
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            renderGamePicker();
+        });
     </script>
 </body>
 </html>
